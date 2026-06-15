@@ -51,11 +51,14 @@ export default function ClientDetailPage() {
       setMessages(m.data ?? []); setRequests(r.data ?? [])
       setLoading(false)
     })
-    // realtime messages
-    supabase.channel('admin-msgs-'+id).on('postgres_changes',
-      { event:'INSERT', schema:'public', table:'messages', filter:`client_id=eq.${id}` },
-      payload => setMessages(ms => [...ms, payload.new as any])
-    ).subscribe()
+    // realtime — same client instance, with cleanup
+    const channel = supabase.channel('admin-msgs-'+id)
+      .on('postgres_changes',
+        { event:'INSERT', schema:'public', table:'messages', filter:`client_id=eq.${id}` },
+        payload => setMessages(ms => [...ms, payload.new as any])
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [id])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:'smooth' }) }, [messages])
