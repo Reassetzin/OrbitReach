@@ -23,7 +23,7 @@ export default function LoginPage() {
         return
       }
 
-      const isAdmin = data.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+      const isAdmin = data.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL 
       window.location.replace('/admin/dashboard')
     } catch (err: any) {
       setError('Connection failed: ' + err.message)
