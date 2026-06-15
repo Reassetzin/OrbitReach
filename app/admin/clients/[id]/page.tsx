@@ -39,6 +39,8 @@ export default function ClientDetailPage() {
   useEffect(() => {
     if (!id) return
     const supabase = createClient()
+    let channel: any = null
+
     Promise.all([
       supabase.from('clients').select('*').eq('id', id).single(),
       supabase.from('tasks').select('*').eq('client_id', id).order('created_at'),
@@ -50,15 +52,16 @@ export default function ClientDetailPage() {
       setTasks(t.data ?? []); setClientTasks(ct.data ?? [])
       setMessages(m.data ?? []); setRequests(r.data ?? [])
       setLoading(false)
+      // subscribe AFTER initial data is set so new messages append correctly
+      channel = supabase.channel('admin-msgs-'+id)
+        .on('postgres_changes',
+          { event:'INSERT', schema:'public', table:'messages', filter:`client_id=eq.${id}` },
+          payload => setMessages(ms => [...ms, payload.new as any])
+        )
+        .subscribe()
     })
-    // realtime — same client instance, with cleanup
-    const channel = supabase.channel('admin-msgs-'+id)
-      .on('postgres_changes',
-        { event:'INSERT', schema:'public', table:'messages', filter:`client_id=eq.${id}` },
-        payload => setMessages(ms => [...ms, payload.new as any])
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [id])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:'smooth' }) }, [messages])
@@ -240,7 +243,17 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Main 3-column grid */}
-      <div style={{ padding:'24px 32px', display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:20 }}>
+      <style>{`
+        .client-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; padding:24px 32px; }
+        @media(max-width:768px) { .client-grid { grid-template-columns:1fr; padding:12px; gap:14px; } }
+        .billing-wrap { margin:0 32px 32px; }
+        @media(max-width:768px) { .billing-wrap { margin:0 12px 20px; } }
+        .rev-controls { margin-left:auto; }
+        @media(max-width:768px) { .rev-controls { margin-left:0; width:100%; } }
+        .stat-prog { padding:10px 32px; }
+        @media(max-width:768px) { .stat-prog { padding:10px 12px; overflow-x:auto; } }
+      `}</style>
+      <div className="client-grid">
 
         {/* YOUR TASKS (admin) */}
         <div style={{ background:'#fff', border:'1px solid #E8EAF0', borderRadius:16, padding:20 }}>

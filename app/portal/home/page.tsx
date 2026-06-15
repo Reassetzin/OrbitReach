@@ -226,7 +226,18 @@ export default function PortalHomePage() {
       </div>
 
       {/* ── THREE COLUMN GRID ── */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:20,marginBottom:24}}>
+      <style>{`
+        .portal-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:24px; }
+        @media(max-width:900px) { .portal-grid { grid-template-columns:1fr 1fr; } }
+        @media(max-width:600px) { .portal-grid { grid-template-columns:1fr; } }
+        .portal-wrap { max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
+        @media(min-width:601px) { .portal-wrap { padding:24px 24px 60px; } }
+        .portal-hero { border-radius:16px; }
+        @media(min-width:601px) { .portal-hero { border-radius:20px; } }
+        .billing-bottom { flex-wrap:wrap; gap:16px; }
+        @media(max-width:600px) { .billing-bottom .billing-actions { width:100%; } }
+      `}</style>
+      <div className="portal-grid">
 
         {/* Action items */}
         <div style={{background:'#fff',border:'1px solid #E8EAF0',borderRadius:16,padding:'20px',display:'flex',flexDirection:'column' as const}}>

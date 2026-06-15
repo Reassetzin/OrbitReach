@@ -12,7 +12,7 @@ const NAV = [
 export default function Sidebar() {
   const pathname = usePathname()
   return (
-    <div style={{ width:232, background:'#0F0F14', display:'flex', flexDirection:'column', flexShrink:0, height:'100vh', position:'sticky', top:0 }}>
+    <div style={{ width:232, background:'#0F0F14', display:'flex', flexDirection:'column', flexShrink:0, height:'100vh', position:'sticky', top:0 }} className="admin-sidebar">
       <div style={{ padding:'24px 20px', borderBottom:'1px solid #1E1E2E', display:'flex', alignItems:'center', gap:12 }}>
         <div style={{ width:36, height:36, borderRadius:12, background:'linear-gradient(135deg,#6C63FF,#A855F7)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 24px rgba(108,99,255,.25)' }}>
           <svg viewBox="0 0 24 24" style={{ width:18, height:18 }} fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
