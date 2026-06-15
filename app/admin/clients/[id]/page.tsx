@@ -24,6 +24,7 @@ export default function ClientDetailPage() {
   const [newMsg, setNewMsg]         = useState('')
   const [saving, setSaving]         = useState(false)
   const [editStatus, setEditStatus] = useState('')
+  const [progressStep, setProgressStep] = useState(1)
   // new client task form
   const [ctForm, setCtForm] = useState({ emoji:'📋', title:'', description:'', type:'text' as typeof TASK_TYPES[number] })
   const [showCtForm, setShowCtForm] = useState(false)
@@ -38,7 +39,7 @@ export default function ClientDetailPage() {
       supabase.from('messages').select('*').eq('client_id', id).order('created_at'),
       supabase.from('requests').select('*').eq('client_id', id).order('created_at', { ascending: false }),
     ]).then(([c, t, ct, m, r]) => {
-      setClient(c.data); setEditStatus(c.data?.status ?? 'pending')
+      setClient(c.data); setEditStatus(c.data?.status ?? 'pending'); setProgressStep(c.data?.progress_step ?? 1)
       setTasks(t.data ?? []); setClientTasks(ct.data ?? [])
       setMessages(m.data ?? []); setRequests(r.data ?? [])
       setLoading(false)
@@ -96,6 +97,13 @@ export default function ClientDetailPage() {
     setClient((c: any) => ({ ...c, status }))
   }
 
+  async function updateProgress(step: number) {
+    setProgressStep(step)
+    const supabase = createClient()
+    await supabase.from('clients').update({ progress_step: step }).eq('id', id as string)
+    setClient((c: any) => ({ ...c, progress_step: step }))
+  }
+
   async function acceptRequest(req: any) {
     const supabase = createClient()
     await supabase.from('requests').update({ status: 'accepted' }).eq('id', req.id)
@@ -124,14 +132,26 @@ export default function ClientDetailPage() {
         <div style={{ fontSize:12, color:'#94A3B8', marginTop:2 }}>{client.type} · ${client.monthly_retainer}/mo · {client.email}</div>
       </div>
 
-      <div style={{ background:'#fff', borderBottom:'1px solid #E8EAF0', padding:'10px 32px', display:'flex', alignItems:'center', gap:8 }}>
-        <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'.06em', color:'#94A3B8', marginRight:8 }}>Status:</span>
-        {['active','review','pending'].map(s => (
-          <button key={s} onClick={() => updateStatus(s)}
-            style={{ padding:'5px 14px', borderRadius:999, border:`1.5px solid ${editStatus===s?'#6C63FF':'#E8EAF0'}`, background:editStatus===s?'#EEF0FF':'#fff', color:editStatus===s?'#6C63FF':'#64748B', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-            {s==='active'?'Active':s==='review'?'In Review':'Pending'}
-          </button>
-        ))}
+      <div style={{ background:'#fff', borderBottom:'1px solid #E8EAF0', padding:'10px 32px', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' as const }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'.06em', color:'#94A3B8', marginRight:4 }}>Status:</span>
+          {['active','review','pending'].map(s => (
+            <button key={s} onClick={() => updateStatus(s)}
+              style={{ padding:'5px 14px', borderRadius:999, border:`1.5px solid ${editStatus===s?'#6C63FF':'#E8EAF0'}`, background:editStatus===s?'#EEF0FF':'#fff', color:editStatus===s?'#6C63FF':'#64748B', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+              {s==='active'?'Active':s==='review'?'In Review':'Pending'}
+            </button>
+          ))}
+        </div>
+        <div style={{ width:1, height:20, background:'#E8EAF0' }}/>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'.06em', color:'#94A3B8', marginRight:4 }}>Progress:</span>
+          {['Submitted','In Progress','Your Review','Completed'].map((label, i) => (
+            <button key={i} onClick={() => updateProgress(i)}
+              style={{ padding:'5px 12px', borderRadius:999, border:`1.5px solid ${progressStep===i?'#6C63FF':progressStep>i?'#10B981':'#E8EAF0'}`, background:progressStep===i?'#EEF0FF':progressStep>i?'#ECFDF5':'#fff', color:progressStep===i?'#6C63FF':progressStep>i?'#10B981':'#64748B', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' as const }}>
+              {progressStep>i?'✓ ':''}{label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ background:'#fff', borderBottom:'1px solid #E8EAF0', padding:'0 32px', display:'flex', overflowX:'auto' as const }}>
