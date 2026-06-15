@@ -349,23 +349,70 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Billing strip */}
-      <div style={{ margin:'0 32px 32px', background:'#fff', border:'1px solid #E8EAF0', borderRadius:16, padding:'16px 24px', display:'flex', alignItems:'center', gap:32, flexWrap:'wrap' as const }}>
-        <div style={{ fontSize:13, fontWeight:600, color:'#0D0D1A' }}>Billing</div>
-        {[
-          ['Contact', client.contact??'—'],
-          ['Setup fee', client.setup_fee>0?`$${client.setup_fee} (one-time)`:'—'],
-          ['Retainer', `$${client.monthly_retainer}/mo`],
-          ['Revisions', `${client.monthly_revisions??5}/mo (${client.revisions_used??0} used)`],
-          ['Next payment', client.next_payment??'Not set'],
-          ['Status', p.label],
-        ].map(([l,v]) => (
-          <div key={l}>
-            <div style={{ fontSize:11, color:'#94A3B8', marginBottom:2 }}>{l}</div>
-            <div style={{ fontSize:13, fontWeight:600, color:l==='Status'?p.color:'#0D0D1A' }}>{v as string}</div>
+      <div style={{ margin:'0 32px 32px', background:'#fff', border:'1px solid #E8EAF0', borderRadius:16, padding:'16px 24px' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:32, flexWrap:'wrap' as const }}>
+          <div style={{ fontSize:13, fontWeight:600, color:'#0D0D1A' }}>Billing</div>
+          {[
+            ['Contact', client.contact??'—'],
+            ['Setup fee', client.setup_fee>0?`$${client.setup_fee} (one-time)`:'—'],
+            ['Retainer', `$${client.monthly_retainer}/mo`],
+            ['Next payment', client.next_payment??'Not set'],
+            ['Status', p.label],
+          ].map(([l,v]) => (
+            <div key={l}>
+              <div style={{ fontSize:11, color:'#94A3B8', marginBottom:2 }}>{l}</div>
+              <div style={{ fontSize:13, fontWeight:600, color:l==='Status'?p.color:'#0D0D1A' }}>{v as string}</div>
+            </div>
+          ))}
+          {/* Revision manager inline */}
+          <div style={{ marginLeft:'auto', background:'#F5F6FA', borderRadius:12, padding:'10px 16px', display:'flex', alignItems:'center', gap:12 }}>
+            <div>
+              <div style={{ fontSize:11, color:'#94A3B8', marginBottom:2 }}>Revisions</div>
+              <div style={{ fontSize:13, fontWeight:700, color:'#0D0D1A' }}>{client.revisions_used??0} / {client.monthly_revisions??5} used</div>
+            </div>
+            <div style={{ width:1, height:28, background:'#E8EAF0' }}/>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:11, color:'#64748B', fontWeight:500 }}>Adjust:</span>
+              <button onClick={async()=>{
+                const used = Math.max(0,(client.revisions_used??0)-1)
+                const supabase=createClient()
+                await supabase.from('clients').update({revisions_used:used}).eq('id',id as string)
+                setClient((c:any)=>({...c,revisions_used:used}))
+              }} style={{ width:28,height:28,borderRadius:7,border:'1px solid #E8EAF0',background:'#fff',fontSize:16,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748B' }}>−</button>
+              <button onClick={async()=>{
+                const used = (client.revisions_used??0)+1
+                const supabase=createClient()
+                await supabase.from('clients').update({revisions_used:used}).eq('id',id as string)
+                setClient((c:any)=>({...c,revisions_used:used}))
+              }} style={{ width:28,height:28,borderRadius:7,border:'1px solid #E8EAF0',background:'#fff',fontSize:16,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748B' }}>+</button>
+            </div>
+            <div style={{ width:1, height:28, background:'#E8EAF0' }}/>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:11, color:'#64748B', fontWeight:500 }}>Monthly:</span>
+              <button onClick={async()=>{
+                const total = Math.max(1,(client.monthly_revisions??5)-1)
+                const supabase=createClient()
+                await supabase.from('clients').update({monthly_revisions:total}).eq('id',id as string)
+                setClient((c:any)=>({...c,monthly_revisions:total}))
+              }} style={{ width:28,height:28,borderRadius:7,border:'1px solid #E8EAF0',background:'#fff',fontSize:16,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748B' }}>−</button>
+              <span style={{ fontSize:13, fontWeight:700, color:'#6C63FF', minWidth:20, textAlign:'center' }}>{client.monthly_revisions??5}</span>
+              <button onClick={async()=>{
+                const total = (client.monthly_revisions??5)+1
+                const supabase=createClient()
+                await supabase.from('clients').update({monthly_revisions:total}).eq('id',id as string)
+                setClient((c:any)=>({...c,monthly_revisions:total}))
+              }} style={{ width:28,height:28,borderRadius:7,border:'1px solid #E8EAF0',background:'#fff',fontSize:16,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748B' }}>+</button>
+            </div>
+            <button onClick={async()=>{
+              const supabase=createClient()
+              await supabase.from('clients').update({revisions_used:0}).eq('id',id as string)
+              setClient((c:any)=>({...c,revisions_used:0}))
+            }} style={{ padding:'5px 12px',background:'#ECFDF5',color:'#10B981',border:'1px solid rgba(16,185,129,.2)',borderRadius:7,fontSize:11,fontWeight:600,cursor:'pointer',whiteSpace:'nowrap' as const }}>
+              ↺ Reset
+            </button>
           </div>
-        ))}
+        </div>
       </div>
 
     </div>
-  )
-}
+  )}

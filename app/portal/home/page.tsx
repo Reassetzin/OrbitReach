@@ -31,6 +31,7 @@ export default function PortalHomePage() {
   const [submitting, setSubmitting] = useState(false)
   const [reqSuccess, setReqSuccess] = useState(false)
   const [reqError, setReqError]   = useState('')
+  const [showReqHistory, setShowReqHistory] = useState(false)
   // refs
   const bottomRef  = useRef<HTMLDivElement>(null)
   const taskFileRef = useRef<HTMLInputElement>(null)
@@ -38,6 +39,7 @@ export default function PortalHomePage() {
 
   useEffect(() => {
     const supabase = createClient()
+    let channel: any = null
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { window.location.href = '/login'; return }
       supabase.from('clients').select('*').eq('user_id', user.id).single().then(({ data: c }) => {
@@ -53,12 +55,15 @@ export default function PortalHomePage() {
           setRequests(r.data ?? [])
           setLoading(false)
         })
-        supabase.channel('portal-msgs').on('postgres_changes',
-          { event:'INSERT', schema:'public', table:'messages', filter:`client_id=eq.${c.id}` },
-          payload => setMessages(ms => [...ms, payload.new as any])
-        ).subscribe()
+        channel = supabase.channel('portal-msgs-'+c.id)
+          .on('postgres_changes',
+            { event:'INSERT', schema:'public', table:'messages', filter:`client_id=eq.${c.id}` },
+            payload => setMessages(ms => [...ms, payload.new as any])
+          )
+          .subscribe()
       })
     })
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:'smooth' }) }, [messages])
@@ -122,6 +127,38 @@ export default function PortalHomePage() {
 
   return (
     <div style={{fontFamily:'Inter,sans-serif',padding:'24px 24px 60px',maxWidth:1100,margin:'0 auto'}}>
+
+      {/* Request history panel */}
+      {showReqHistory&&(
+        <div style={{position:'fixed',inset:0,zIndex:300,display:'flex'}} onClick={e=>e.target===e.currentTarget&&setShowReqHistory(false)}>
+          <div style={{marginLeft:'auto',width:420,background:'#fff',height:'100%',boxShadow:'-8px 0 32px rgba(0,0,0,.12)',display:'flex',flexDirection:'column' as const}}>
+            <div style={{padding:'20px 24px',borderBottom:'1px solid #E8EAF0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+              <div>
+                <div style={{fontSize:16,fontWeight:700,color:'#0D0D1A'}}>Request history</div>
+                <div style={{fontSize:12,color:'#94A3B8',marginTop:2}}>{requests.length} total · {requests.filter(r=>r.status==='pending').length} pending</div>
+              </div>
+              <button onClick={()=>setShowReqHistory(false)} style={{background:'#F5F6FA',border:'1px solid #E8EAF0',borderRadius:8,padding:'6px 14px',fontSize:13,color:'#64748B',cursor:'pointer',fontWeight:600}}>✕ Close</button>
+            </div>
+            <div style={{flex:1,overflowY:'auto' as const,padding:'16px 24px'}}>
+              {requests.length===0&&<div style={{textAlign:'center',padding:32,color:'#94A3B8',fontSize:13}}>No requests yet.</div>}
+              {requests.map(r=>{
+                const s=STATUS_REQ[r.status]??STATUS_REQ.pending
+                return (
+                  <div key={r.id} style={{padding:14,background:'#F5F6FA',borderRadius:12,marginBottom:12,border:'1px solid #E8EAF0'}}>
+                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10,marginBottom:8}}>
+                      <div style={{fontSize:13,fontWeight:600,color:'#0D0D1A',flex:1}}>{r.title}</div>
+                      <span style={{fontSize:11,fontWeight:600,padding:'3px 10px',borderRadius:999,background:s.bg,color:s.color,flexShrink:0}}>{s.label}</span>
+                    </div>
+                    {r.description&&<div style={{fontSize:12,color:'#64748B',marginBottom:6,lineHeight:1.5}}>{r.description}</div>}
+                    {r.link&&<a href={r.link} target="_blank" style={{fontSize:11,color:'#6C63FF',display:'block',marginBottom:6}}>{r.link}</a>}
+                    <div style={{fontSize:11,color:'#94A3B8'}}>{new Date(r.created_at).toLocaleString([],{dateStyle:'medium',timeStyle:'short'})}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Task modal */}
       {modal && (
@@ -227,15 +264,30 @@ export default function PortalHomePage() {
 
         {/* Submit request */}
         <div style={{background:'#fff',border:'1px solid #E8EAF0',borderRadius:16,padding:20,display:'flex',flexDirection:'column' as const}}>
-          <div style={{fontSize:14,fontWeight:600,color:'#0D0D1A',marginBottom:4}}>Submit a request</div>
-          {left<=0
-            ? <div style={{fontSize:12,color:'#F59E0B',background:'#FFFBEB',borderRadius:8,padding:'8px 12px',marginBottom:12}}>⚠ Limit reached — new requests queue for next month.</div>
-            : <div style={{fontSize:12,color:'#94A3B8',marginBottom:12}}>{left} of {client.monthly_revisions??5} revisions remaining this month.</div>
-          }
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+            <div style={{fontSize:14,fontWeight:600,color:'#0D0D1A'}}>Submit a request</div>
+            {requests.length>0&&(
+              <button onClick={()=>setShowReqHistory(true)} style={{fontSize:11,fontWeight:600,color:'#6C63FF',background:'#EEF0FF',border:'none',borderRadius:6,padding:'4px 10px',cursor:'pointer'}}>
+                📋 History ({requests.length})
+              </button>
+            )}
+          </div>
+          {/* Revision progress bar */}
+          <div style={{background:'#F5F6FA',borderRadius:10,padding:'10px 14px',marginBottom:12}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+              <span style={{fontSize:12,fontWeight:600,color:'#0D0D1A'}}>{left} of {client.monthly_revisions??5} revisions left</span>
+              <span style={{fontSize:11,color:'#94A3B8'}}>Resets 1st of next month</span>
+            </div>
+            <div style={{height:6,background:'#E8EAF0',borderRadius:999,overflow:'hidden'}}>
+              <div style={{height:'100%',width:`${Math.min(pct,100)}%`,background:left===0?'#EF4444':left===1?'#F59E0B':'linear-gradient(90deg,#6C63FF,#A855F7)',borderRadius:999,transition:'width .4s'}}/>
+            </div>
+            {left===0&&<div style={{fontSize:11,color:'#F59E0B',marginTop:4}}>⚠ Limit reached — new requests will queue for next month.</div>}
+            {left===1&&<div style={{fontSize:11,color:'#F59E0B',marginTop:4}}>Last revision this month — use it wisely!</div>}
+          </div>
           <div style={{display:'flex',flexDirection:'column' as const,gap:10,flex:1}}>
             <input value={reqTitle} onChange={e=>setReqTitle(e.target.value)} placeholder="What do you need changed? *"
               style={{fontSize:13,padding:'9px 12px',border:'1.5px solid #E8EAF0',borderRadius:8,background:'#F5F6FA',outline:'none',boxSizing:'border-box' as const,width:'100%'}}/>
-            <textarea value={reqDesc} onChange={e=>setReqDesc(e.target.value)} placeholder="More details… (which page, what text, any references)" rows={3}
+            <textarea value={reqDesc} onChange={e=>setReqDesc(e.target.value)} placeholder="More details… (which page, what text, any references)" rows={2}
               style={{fontSize:13,padding:'9px 12px',border:'1.5px solid #E8EAF0',borderRadius:8,background:'#F5F6FA',outline:'none',resize:'vertical' as const,boxSizing:'border-box' as const,width:'100%'}}/>
             <input value={reqLink} onChange={e=>setReqLink(e.target.value)} placeholder="Reference link (optional)"
               style={{fontSize:13,padding:'9px 12px',border:'1.5px solid #E8EAF0',borderRadius:8,background:'#F5F6FA',outline:'none',boxSizing:'border-box' as const,width:'100%'}}/>
@@ -246,23 +298,9 @@ export default function PortalHomePage() {
             <input ref={reqFileRef} type="file" style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)setReqFile(f.name)}}/>
             {reqError&&<div style={{fontSize:12,color:'#EF4444',background:'#FEF2F2',padding:'7px 10px',borderRadius:7}}>{reqError}</div>}
             <button onClick={submitRequest} disabled={submitting} style={{padding:'10px',background:reqSuccess?'linear-gradient(135deg,#10B981,#059669)':'linear-gradient(135deg,#6C63FF,#A855F7)',color:'#fff',border:'none',borderRadius:8,fontSize:13,fontWeight:600,cursor:'pointer',marginTop:'auto'}}>
-              {reqSuccess?'✓ Submitted!':submitting?'Submitting…':left<=0?'Add to queue →':'Submit request →'}
+              {reqSuccess?'✓ Submitted!':submitting?'Submitting…':left<=0?'Add to next month →':'Submit request →'}
             </button>
           </div>
-          {requests.length>0&&(
-            <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid #E8EAF0'}}>
-              <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase' as const,letterSpacing:'.06em',color:'#94A3B8',marginBottom:8}}>Past requests</div>
-              {requests.slice(0,3).map(r=>{
-                const s=STATUS_REQ[r.status]??STATUS_REQ.pending
-                return (
-                  <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid #F5F6FA'}}>
-                    <div style={{fontSize:12,color:'#0D0D1A',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const,flex:1,marginRight:8}}>{r.title}</div>
-                    <span style={{fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:999,background:s.bg,color:s.color,flexShrink:0}}>{s.label}</span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
 
         {/* Messaging */}
