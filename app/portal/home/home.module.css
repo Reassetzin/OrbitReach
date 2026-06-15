@@ -1,0 +1,23 @@
+.body { min-height: 100vh; }
+.banner { background: var(--grad-violet); padding: 28px 32px; color: #fff; position: relative; overflow: hidden; }
+.banner::after { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,.07); }
+.bannerInner { position: relative; z-index: 1; }
+.bannerType { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; opacity:.7; margin-bottom:6px; }
+.bannerName { font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+.bannerSub { font-size:13px; opacity:.75; margin-bottom:20px; }
+.bannerStats { display:flex; gap:12px; flex-wrap:wrap; }
+.stat { background:rgba(255,255,255,.15); border-radius:12px; padding:10px 16px; }
+.statVal { font-size:18px; font-weight:700; color:#fff; }
+.statLbl { font-size:11px; opacity:.7; margin-top:2px; }
+.steps { background:#fff; border-bottom:1px solid var(--border); padding:20px 32px; margin-bottom:20px; }
+.stepsHead { font-size:14px; font-weight:600; color:var(--ink); margin-bottom:16px; }
+.stepsRow { display:flex; align-items:flex-start; gap:0; }
+.step { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
+.step::after { content:''; position:absolute; top:13px; left:50%; right:-50%; height:2px; background:var(--border); z-index:0; }
+.step:last-child::after { display:none; }
+.dot { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; position:relative; z-index:1; margin-bottom:8px; }
+.dotDone { border-color:var(--green); background:var(--green); color:#fff; }
+.dotActive { border-color:var(--violet); background:var(--violet); color:#fff; box-shadow:0 0 0 4px rgba(108,99,255,.15); }
+.stepLabel { font-size:11px; font-weight:600; text-align:center; color:var(--muted); }
+.stepSub { font-size:10px; color:var(--muted); text-align:center; margin-top:2px; }
+@media(max-width:768px) { .banner { padding:20px 16px; } .steps { padding:16px; } .stepSub { display:none; } }
