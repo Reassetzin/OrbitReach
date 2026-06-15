@@ -1,0 +1,15 @@
+.row { display:flex; align-items:center; gap:12px; padding:10px; border-radius:10px; cursor:pointer; transition:background .12s; border-bottom:1px solid var(--border); text-decoration:none; color:inherit; }
+.row:last-child { border-bottom:none; }
+.row:hover { background:var(--bg); }
+.av { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+.av-g { background:var(--green-light); color:var(--green); }
+.av-v { background:var(--violet-light); color:var(--violet); }
+.av-a { background:var(--amber-light); color:#92400E; }
+.av-b { background:var(--blue-light); color:var(--blue); }
+.name { font-size:13px; font-weight:600; color:var(--ink); }
+.type { font-size:11px; color:var(--muted); margin-top:2px; }
+.right { text-align:right; }
+.amt { font-size:13px; font-weight:700; color:var(--ink); }
+.amt span { font-size:10px; font-weight:400; color:var(--muted); }
+.date { font-size:11px; color:var(--muted); margin-top:2px; }
+@media(max-width:768px) { .right, .row svg { display:none; } }

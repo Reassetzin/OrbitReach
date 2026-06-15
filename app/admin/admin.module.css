@@ -1,0 +1,7 @@
+.app { display: flex; height: 100vh; overflow: hidden; }
+.main { flex: 1; overflow-y: auto; background: var(--bg); }
+
+@media(max-width:768px) {
+  .app { flex-direction: column; height: auto; min-height: 100dvh; }
+  .main { padding-top: 56px; padding-bottom: 80px; overflow-y: auto; flex: 1; }
+}
