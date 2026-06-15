@@ -24,7 +24,7 @@ export default function LoginPage() {
       }
 
       const isAdmin = data.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
-      window.location.href = isAdmin ? '/admin/dashboard' : '/portal/home'
+      window.location.replace('/admin/dashboard')
     } catch (err: any) {
       setError('Connection failed: ' + err.message)
       setLoading(false)
