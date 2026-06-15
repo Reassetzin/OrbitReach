@@ -1,76 +1,87 @@
 'use client'
 import { useState } from 'react'
 import { createClient } from '@/supabase/client'
-import { useRouter } from 'next/navigation'
-import styles from './login.module.css'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      const isAdmin = data.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+      window.location.href = isAdmin ? '/admin/dashboard' : '/portal/home'
+    } catch (err: any) {
+      setError('Connection failed: ' + err.message)
       setLoading(false)
-      return
     }
-
-    const isAdmin = data.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
-    router.push(isAdmin ? '/admin/dashboard' : '/portal/home')
-    router.refresh()
   }
 
   return (
-    <div className={styles.wrap}>
-      <div className={styles.card}>
-        <div className={styles.logo}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F5F6FA', padding:24 }}>
+      <div style={{ background:'#fff', borderRadius:20, padding:40, width:'100%', maxWidth:400, boxShadow:'0 4px 12px rgba(0,0,0,.08)' }}>
+        <div style={{ width:48, height:48, borderRadius:14, background:'linear-gradient(135deg,#6C63FF,#A855F7)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
+          <svg viewBox="0 0 24 24" style={{ width:22, height:22 }} fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
         </div>
-        <h1 className={styles.title}>Studio Portal</h1>
-        <p className={styles.sub}>Sign in to your account</p>
+        <h1 style={{ fontSize:22, fontWeight:700, textAlign:'center', marginBottom:6 }}>Studio Portal</h1>
+        <p style={{ fontSize:13, color:'#94A3B8', textAlign:'center', marginBottom:28 }}>Sign in to your account</p>
 
-        <form onSubmit={handleLogin} className={styles.form}>
+        <form onSubmit={handleLogin} style={{ display:'flex', flexDirection:'column', gap:16 }}>
           <div>
-            <label className="field-label">Email</label>
+            <label style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em', color:'#64748B', display:'block', marginBottom:6 }}>Email</label>
             <input
-              className="field-input"
               type="email"
-              placeholder="you@example.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              autoComplete="email"
+              placeholder="you@example.com"
+              style={{ width:'100%', fontSize:13, padding:'10px 14px', border:'1.5px solid #E8EAF0', borderRadius:8, background:'#F5F6FA', outline:'none' }}
             />
           </div>
           <div>
-            <label className="field-label">Password</label>
+            <label style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em', color:'#64748B', display:'block', marginBottom:6 }}>Password</label>
             <input
-              className="field-input"
               type="password"
-              placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              autoComplete="current-password"
+              placeholder="••••••••"
+              style={{ width:'100%', fontSize:13, padding:'10px 14px', border:'1.5px solid #E8EAF0', borderRadius:8, background:'#F5F6FA', outline:'none' }}
             />
           </div>
-          {error && <p className={styles.error}>{error}</p>}
-          <button type="submit" className="btn btn-violet" style={{width:'100%',justifyContent:'center'}} disabled={loading}>
+          {error && (
+            <div style={{ fontSize:12, color:'#EF4444', background:'#FEF2F2', padding:'8px 12px', borderRadius:8 }}>
+              {error}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ width:'100%', padding:'10px', fontSize:13, fontWeight:600, background:'linear-gradient(135deg,#6C63FF,#A855F7)', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', marginTop:4 }}
+          >
             {loading ? 'Signing in…' : 'Sign in →'}
           </button>
         </form>
+
+        <div style={{ marginTop:16, fontSize:11, color:'#94A3B8', textAlign:'center' }}>
+          URL: {typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0,30) + '…' : ''}
+        </div>
       </div>
     </div>
   )
