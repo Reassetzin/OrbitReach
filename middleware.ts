@@ -24,26 +24,16 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  // Not logged in — redirect to login (except login page itself)
+  // Not logged in — redirect to login
   if (!user && path !== '/login') {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Logged in on login page — redirect to correct dashboard
+  // Logged in on login page — redirect to dashboard
   if (user && path === '/login') {
-    const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
-    return NextResponse.redirect(new URL(isAdmin ? '/admin/dashboard' : '/portal/home', request.url))
+    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
   }
 
-  // Client trying to access admin routes — block
-  if (user && path.startsWith('/admin')) {
-    const isAdmin = user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
-    if (!isAdmin) {
-      return NextResponse.redirect(new URL('/portal/home', request.url))
-    }
-  }
-
-  // Admin trying to access portal routes — allow (for preview)
   return supabaseResponse
 }
 
