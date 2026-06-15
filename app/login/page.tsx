@@ -93,7 +93,7 @@ export default function LoginPage() {
         </form>
 
         <div style={{ marginTop:16, fontSize:11, color:'#94A3B8', textAlign:'center' }}>
-          v1.0.5 · {process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0,30)}...
+          v1.0.6 · {process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0,30)}...
         </div>
       </div>
     </div>
