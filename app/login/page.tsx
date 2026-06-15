@@ -7,27 +7,35 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState('')
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setStatus('Connecting...')
 
     try {
       const supabase = createClient()
+      setStatus('Signing in...')
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
       if (error) {
         setError(error.message)
         setLoading(false)
+        setStatus('')
         return
       }
 
-      const isAdmin = data.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL 
-      window.location.replace('/admin/dashboard')
+      setStatus('Success! Redirecting... user: ' + data.user?.email)
+      setTimeout(() => {
+        window.location.href = '/admin/dashboard'
+      }, 1500)
+
     } catch (err: any) {
       setError('Connection failed: ' + err.message)
       setLoading(false)
+      setStatus('')
     }
   }
 
@@ -70,6 +78,11 @@ export default function LoginPage() {
               {error}
             </div>
           )}
+          {status && (
+            <div style={{ fontSize:12, color:'#10B981', background:'#ECFDF5', padding:'8px 12px', borderRadius:8 }}>
+              {status}
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}
@@ -80,7 +93,7 @@ export default function LoginPage() {
         </form>
 
         <div style={{ marginTop:16, fontSize:11, color:'#94A3B8', textAlign:'center' }}>
-          URL: {typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0,30) + '…' : ''}
+          v1.0.3 · {process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0,30)}...
         </div>
       </div>
     </div>
