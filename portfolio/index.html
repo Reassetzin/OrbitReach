@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OrbitReach — Web Design Studio</title>
+<meta name="description" content="OrbitReach builds conversion-focused websites for businesses ready to grow. No templates, no shortcuts — just sites that actually work.">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #F7F5FF;
+    --ink: #0D0B1A;
+    --mut: #6B6888;
+    --faint: #B8B5D4;
+    --violet: #7C3AED;
+    --violet-l: #A78BFA;
+    --violet-xl: #EDE9FE;
+    --violet-d: #5B21B6;
+    --card: rgba(124,58,237,0.04);
+    --line: rgba(124,58,237,0.12);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    cursor: none;
+  }
+  .disp { font-family: 'Clash Display', 'DM Sans', sans-serif; }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 2; }
+  @media (hover: none) { body { cursor: auto; } }
+
+  /* ── ORBS (light palette) ── */
+  #field {
+    position: fixed; inset: 0; z-index: 0;
+    filter: blur(70px) saturate(120%); opacity: 0;
+    pointer-events: none; transition: opacity 1s ease; will-change: opacity;
+  }
+  #field.ready { opacity: 1; }
+  .orb { position: absolute; border-radius: 50%; mix-blend-mode: multiply; will-change: transform; }
+  .o1 { width: 46vw; height: 46vw; background: radial-gradient(circle, rgba(167,139,250,0.35), transparent 65%); top: -8%; left: -6%; animation: drift1 18s ease-in-out infinite; }
+  .o2 { width: 42vw; height: 42vw; background: radial-gradient(circle, rgba(124,58,237,0.2), transparent 65%); top: 10%; right: -8%; animation: drift2 22s ease-in-out infinite; }
+  .o3 { width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(196,181,253,0.3), transparent 65%); bottom: -10%; left: 18%; animation: drift3 20s ease-in-out infinite; }
+  .o4 { width: 26vw; height: 26vw; background: radial-gradient(circle, rgba(237,233,254,0.6), transparent 65%); bottom: 8%; right: 14%; animation: drift1 26s ease-in-out infinite reverse; }
+  .ofollow { width: 36vw; height: 36vw; left: 0; top: 0; opacity: 0.7; }
+  @keyframes drift1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(6vw,8vh) scale(1.15)} }
+  @keyframes drift2 { 0%,100%{transform:translate(0,0) scale(1.1)} 50%{transform:translate(-8vw,6vh) scale(.9)} }
+  @keyframes drift3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(5vw,-7vh) scale(1.2)} }
+  @media (max-width: 820px) { #field { filter: blur(45px); } .o4 { display: none; } }
+
+  /* ── CURSOR ── */
+  .cur {
+    position: fixed; top: 0; left: 0; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--violet); z-index: 9999;
+    pointer-events: none; mix-blend-mode: normal;
+    transform: translate(-50%,-50%);
+    transition: width .22s, height .22s, background .22s;
+  }
+  .cur.big { width: 60px; height: 60px; background: var(--violet-l); opacity: 0.4; }
+
+  /* ── SCROLL BAR ── */
+  .scrollbar { position: fixed; top: 0; left: 0; height: 3px; background: var(--violet); z-index: 70; width: 0; }
+
+  /* ── LOADER ── */
+  #loader {
+    position: fixed; inset: 0; z-index: 10000;
+    background: var(--bg); display: flex; align-items: center;
+    justify-content: center; flex-direction: column; gap: 20px;
+    transition: opacity .6s, visibility .6s;
+  }
+  #loader.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+  #loader .lt {
+    font-family: 'Clash Display', sans-serif; font-weight: 600;
+    font-size: clamp(32px, 7vw, 80px); letter-spacing: -.03em;
+    overflow: hidden; height: 1.2em; color: var(--ink);
+  }
+  #loader .lt span { display: inline-block; animation: up .9s cubic-bezier(.7,0,.2,1) forwards; }
+  @keyframes up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  #loader .lt .grad { background: linear-gradient(100deg, var(--violet), var(--violet-l)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  #loader .bar { width: 160px; height: 3px; background: var(--violet-xl); border-radius: 3px; overflow: hidden; }
+  #loader .bar i { display: block; height: 100%; width: 0; background: var(--violet); animation: fill 1.2s ease forwards; }
+  @keyframes fill { to { width: 100%; } }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  }
+  nav .inner {
+    max-width: 1200px; margin: 0 auto; padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 80px;
+  }
+  .logo {
+    font-family: 'Clash Display', sans-serif; font-weight: 700;
+    font-size: 1.2rem; color: var(--ink); letter-spacing: -.02em;
+  }
+  .logo span { color: var(--violet); }
+  .navlinks { display: flex; gap: 28px; font-size: 14px; font-weight: 500; list-style: none; }
+  .navlinks a { color: var(--mut); position: relative; transition: color .2s; }
+  .navlinks a::after { content: ''; position: absolute; left: 0; bottom: -4px; width: 0; height: 2px; background: var(--violet); transition: width .3s; }
+  .navlinks a:hover { color: var(--violet); }
+  .navlinks a:hover::after { width: 100%; }
+  .nav-cta {
+    background: var(--violet) !important; color: #fff !important;
+    padding: .5rem 1.25rem; border-radius: 100px;
+    transition: background .2s !important;
+  }
+  .nav-cta::after { display: none !important; }
+  .nav-cta:hover { background: var(--violet-d) !important; }
+  .burger { display: none; flex-direction: column; gap: 5px; background: none; border: 0; cursor: none; padding: 6px; }
+  .burger span { width: 24px; height: 2px; background: var(--ink); transition: .3s; }
+  #mobnav {
+    position: fixed; inset: 0; z-index: 65; background: var(--bg);
+    display: flex; flex-direction: column; justify-content: center;
+    gap: 8px; padding: 0 40px;
+    transform: translateY(-100%); transition: transform .5s cubic-bezier(.7,0,.2,1);
+  }
+  #mobnav.open { transform: translateY(0); }
+  #mobnav a { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 36px; color: var(--ink); padding: 10px 0; border-bottom: 1px solid var(--line); }
+  #mobnav .close { position: absolute; top: 28px; right: 32px; font-size: 28px; color: var(--mut); cursor: none; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; padding: 120px 0 60px; position: relative;
+    overflow: hidden;
+  }
+  .avail {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 500; color: var(--mut); margin-bottom: 28px;
+  }
+  .avail .d {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--violet); box-shadow: 0 0 10px var(--violet-l);
+    animation: blink 1.6s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .hero h1 {
+    font-family: 'Clash Display', sans-serif; font-weight: 700;
+    font-size: clamp(52px, 11vw, 140px); line-height: .92; letter-spacing: -.035em;
+    color: var(--ink);
+  }
+  .hero h1 .row { overflow: hidden; display: block; }
+  .hero h1 .row i { display: inline-block; font-style: normal; transform: translateY(110%); transition: transform 1s cubic-bezier(.16,1,.3,1); }
+  .hero.in h1 .row i { transform: translateY(0); }
+  .hero h1 .row:nth-child(2) i { transition-delay: .12s; }
+  .hero h1 .row:nth-child(3) i { transition-delay: .24s; }
+  .hero h1 .grad {
+    background: linear-gradient(100deg, var(--violet), var(--violet-l), var(--violet));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    background-size: 200% auto; animation: shine 5s linear infinite;
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+
+  .heromid { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 48px; gap: 40px; flex-wrap: wrap; }
+  .heromid p { font-size: 18px; color: var(--mut); max-width: 560px; line-height: 1.7; }
+  .hctas { display: flex; flex-direction: column; gap: 12px; }
+
+  .hbtn {
+    padding: 15px 32px; border-radius: 100px; font-weight: 600;
+    font-size: 15px; text-align: center; white-space: nowrap;
+    cursor: none; transition: transform .2s, background .2s, border-color .2s, color .2s;
+  }
+  .hbtn-p { background: var(--violet); color: #fff; }
+  .hbtn-p:hover { transform: translateY(-2px); background: var(--violet-d); box-shadow: 0 10px 28px rgba(124,58,237,.28); }
+  .hbtn-s { border: 1.5px solid var(--line); color: var(--mut); }
+  .hbtn-s:hover { border-color: var(--violet-l); color: var(--violet); }
+
+  /* ── ORBIT CANVAS ── */
+  #orbit-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 1.4s ease;
+  }
+  #orbit-canvas.ready { opacity: 1; }
+
+  .scrollhint {
+    position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--faint); display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .scrollhint .ln { width: 1px; height: 36px; background: linear-gradient(var(--violet), transparent); animation: slide 1.8s infinite; }
+  @keyframes slide { 0%{transform:scaleY(0);transform-origin:top} 50%{transform:scaleY(1);transform-origin:top} 50.1%{transform-origin:bottom} 100%{transform:scaleY(0);transform-origin:bottom} }
+
+  /* ── SECTIONS ── */
+  section { padding: 110px 0; position: relative; }
+  .reveal { opacity: 0; transform: translateY(36px); transition: opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1); }
+  .reveal.show { opacity: 1; transform: none; }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: .18em; color: var(--violet); font-weight: 600; margin-bottom: 24px; }
+  .big { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(32px, 5.5vw, 68px); letter-spacing: -.025em; line-height: 1.02; margin-bottom: 52px; color: var(--ink); }
+  .word { display: inline-block; overflow: hidden; vertical-align: top; }
+  .word i { display: inline-block; font-style: normal; transform: translateY(110%); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+  .show .word i { transform: translateY(0); }
+
+  /* ── MARQUEE ── */
+  .marquee-section { padding: 1.25rem 0; background: var(--violet); overflow: hidden; white-space: nowrap; }
+  .marquee-track { display: inline-flex; animation: marquee 24s linear infinite; }
+  .marquee-item { display: inline-flex; align-items: center; gap: .75rem; padding: 0 2rem; font-family: 'Clash Display', sans-serif; font-weight: 600; font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.85); }
+  .marquee-dot { width: 4px; height: 4px; background: var(--violet-xl); border-radius: 50%; flex-shrink: 0; }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ── STATS ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0; }
+  .stat-item { padding: 3rem 2rem; border-right: 1px solid var(--line); }
+  .stat-item:last-child { border-right: none; }
+  .stat-num { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 3rem; color: var(--violet); letter-spacing: -.04em; line-height: 1; margin-bottom: .4rem; }
+  .stat-label { font-size: .875rem; color: var(--mut); }
+
+  /* ── WORK (project list) ── */
+  .plist { border-top: 1px solid var(--line); }
+  .prow {
+    display: grid;
+    grid-template-columns: 60px 1fr 160px 32px;
+    align-items: center;
+    gap: 16px;
+    padding: 28px 8px; border-bottom: 1px solid var(--line);
+    position: relative; transition: padding .35s, background .2s; cursor: none;
+  }
+  .prow:hover { padding-left: 20px; padding-right: 20px; background: var(--bg2); }
+  .prow .yr { font-size: 13px; color: var(--faint); }
+  .prow .pinfo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .prow .pname { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(20px, 3.5vw, 44px); letter-spacing: -.02em; transition: color .3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prow:hover .pname { color: var(--violet); }
+  .prow .ptag { font-size: 13px; color: var(--mut); }
+  .prow .pmeta { font-size: 12px; color: var(--mut); text-align: right; line-height: 1.6; white-space: nowrap; }
+
+  /* peek card */
+  #peek {
+    position: fixed; top: 0; left: 0; width: 300px; height: 220px;
+    border-radius: 16px; z-index: 50; pointer-events: none;
+    opacity: 0; transform: translate(-50%,-50%) scale(.8) rotate(-5deg);
+    transition: opacity .35s, transform .35s; overflow: hidden;
+    box-shadow: 0 12px 40px rgba(124,58,237,.1);
+    background: rgba(237,233,254,0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(124,58,237,0.1);
+  }
+  #peek.on { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(-5deg); }
+  #peek img { width: 100%; height: 100%; object-fit: cover; }
+  #peek .pk { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 18px; color: var(--violet); }
+  @media (max-width: 820px) { #peek { display: none; } }
+
+  /* ── PROCESS ── */
+  .proc-section { background: var(--bg2); }
+  .steps { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; counter-reset: s; }
+  .step {
+    position: relative; padding: 28px 24px; border-radius: 20px;
+    background: #fff; border: 1px solid var(--line);
+    transition: transform .3s, box-shadow .3s;
+  }
+  .step:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(124,58,237,.1); }
+  .step::before { counter-increment: s; content: counter(s, decimal-leading-zero); font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 28px; color: var(--violet); }
+  .step h4 { font-family: 'Clash Display', sans-serif; font-weight: 600; font-size: 18px; margin: 12px 0 8px; color: var(--ink); }
+  .step p { color: var(--mut); font-size: 14px; line-height: 1.6; }
+
+  /* ── SERVICES tilt cards ── */
+  .svc { display: grid; grid-template-columns: repeat(2,1fr); gap: 20px; }
+  .tcard {
+    position: relative; padding: 36px 32px 32px; border-radius: 22px;
+    background: var(--card); border: 1px solid var(--line);
+    overflow: hidden; display: flex; flex-direction: column; min-height: 280px;
+    transition: transform .5s cubic-bezier(.16,1,.3,1), border-color .3s;
+    transform-style: preserve-3d; will-change: transform;
+  }
+  .tcard::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--gc); opacity: .8; }
+  .tcard .glow { position: absolute; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, var(--gc), transparent 68%); opacity: 0; transition: opacity .4s; pointer-events: none; transform: translate(-50%,-50%); }
+  .tcard:hover { border-color: rgba(124,58,237,.25); }
+  .tcard:hover .glow { opacity: .08; }
+  .thead { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .tnum { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 32px; line-height: 1; color: var(--gc); }
+  .tkx { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; color: var(--mut); border: 1px solid var(--line); padding: 4px 10px; border-radius: 100px; }
+  .tcard h3 { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 24px; margin-bottom: 10px; color: var(--ink); }
+  .tcard p { color: var(--mut); font-size: 15px; flex: 1; line-height: 1.6; }
+  .tcard .stk { margin-top: 22px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .tcard .stk span { font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 100px; border: 1px solid var(--line); color: var(--mut); }
+
+  /* ── TESTIMONIALS ── */
+  .quotes { display: grid; grid-template-columns: repeat(2,1fr); gap: 20px; }
+  .quote { padding: 32px 28px; border-radius: 20px; background: var(--bg2); border: 1px solid var(--line); }
+  .quote .stars { color: var(--violet); font-size: 14px; letter-spacing: 2px; margin-bottom: 14px; }
+  .quote p { font-size: 15.5px; color: var(--ink); margin-bottom: 20px; line-height: 1.65; }
+  .quote .who { display: flex; align-items: center; gap: 12px; }
+  .quote .av { width: 40px; height: 40px; border-radius: 50%; background: var(--violet-xl); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--violet); }
+  .quote .who .nm { font-weight: 600; font-size: 14px; color: var(--ink); }
+  .quote .who .rl { font-size: 12px; color: var(--mut); }
+
+  /* ── CONTACT ── */
+  .ctwrap { display: grid; grid-template-columns: 1fr 1fr; gap: 54px; align-items: start; }
+  .ctleft h2 { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(34px, 6vw, 78px); line-height: .95; letter-spacing: -.03em; margin-bottom: 28px; color: var(--ink); }
+  .ctleft h2 .grad { background: linear-gradient(100deg, var(--violet), var(--violet-l)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .calbtn { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; padding: 14px 26px; border-radius: 100px; border: 1.5px solid var(--line); transition: .25s; margin-bottom: 16px; cursor: none; color: var(--ink); }
+  .calbtn:hover { background: var(--violet); color: #fff; border-color: var(--violet); }
+  .ctmail { display: block; color: var(--mut); font-size: 14px; }
+  .ctmail a { color: var(--violet); }
+
+  form { display: flex; flex-direction: column; gap: 14px; }
+  form .fld label { display: block; font-size: 12px; color: var(--mut); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+  form input, form textarea { width: 100%; background: var(--bg2); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px; color: var(--ink); font-family: inherit; font-size: 14.5px; transition: border-color .2s; outline: none; }
+  form input:focus, form textarea:focus { border-color: var(--violet); }
+  form textarea { resize: vertical; min-height: 110px; }
+  .submit { align-self: flex-start; background: var(--violet); color: #fff; font-weight: 600; font-size: 15px; padding: 14px 32px; border: 0; border-radius: 100px; cursor: none; transition: transform .2s, background .2s; font-family: inherit; }
+  .submit:hover { transform: translateY(-2px); background: var(--violet-d); }
+  .submit:disabled { opacity: .6; }
+  .formstatus.ok { font-size: 13px; color: var(--violet); margin-top: 4px; }
+  .formstatus.err { font-size: 13px; color: #dc2626; margin-top: 4px; }
+
+  /* ── FLOAT CTA ── */
+  .floatcta { position: fixed; right: 24px; bottom: 24px; z-index: 55; background: var(--violet); color: #fff; font-weight: 600; font-size: 14px; padding: 14px 24px; border-radius: 100px; box-shadow: 0 12px 32px rgba(124,58,237,.3); cursor: none; opacity: 0; transform: translateY(20px); pointer-events: none; transition: opacity .4s, transform .4s; }
+  .floatcta.show { opacity: 1; transform: none; pointer-events: auto; }
+  .floatcta:hover { transform: translateY(-2px); }
+
+  /* ── PROJECT MODAL ── */
+  #pmodal {
+    position: fixed; inset: 0; z-index: 9000;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; visibility: hidden; transition: opacity .3s, visibility .3s;
+  }
+  #pmodal.open { opacity: 1; visibility: visible; }
+  #pmodal .mback { position: absolute; inset: 0; background: rgba(13,11,26,.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #pmodal .mbox {
+    position: relative; z-index: 2; width: 100%; max-width: 1000px;
+    max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 24px;
+    border: 1px solid var(--line); box-shadow: 0 32px 80px rgba(124,58,237,.15);
+    transform: translateY(24px) scale(.98); transition: transform .4s cubic-bezier(.16,1,.3,1);
+  }
+  #pmodal.open .mbox { transform: none; }
+  #pmodal .mclose {
+    position: sticky; top: 16px; float: right; margin: 16px 16px 0 0; z-index: 3;
+    width: 34px; height: 34px; border-radius: 50%; background: var(--bg2);
+    border: 1px solid var(--line); color: var(--mut); font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: background .2s, color .2s;
+    flex-shrink: 0;
+  }
+  #pmodal .mclose:hover { background: var(--violet); color: #fff; }
+  #pmodal .mbody { padding: 8px 36px 36px; clear: both; }
+
+  /* top two-column: info left, screenshot right */
+  #pmodal .mcols { display: grid; grid-template-columns: 1fr 320px; gap: 28px; align-items: start; margin-bottom: 32px; }
+  #pmodal .mcol-main { min-width: 0; }
+  #pmodal .mcol-side { display: flex; flex-direction: column; gap: 14px; }
+
+  /* left col */
+  #pmodal .mtags { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+  #pmodal .mtag { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; padding: 3px 11px; border-radius: 100px; background: var(--violet-xl); color: var(--violet); }
+  #pmodal .mtitle { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(1.5rem, 3vw, 2.1rem); letter-spacing: -.02em; color: var(--ink); margin-bottom: 5px; }
+  #pmodal .msubtitle { font-size: .875rem; color: var(--mut); margin-bottom: 20px; }
+  #pmodal .mstats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
+  #pmodal .mstat { background: var(--bg2); border-radius: 12px; padding: 12px 8px; text-align: center; }
+  #pmodal .mstat .mn { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 1.35rem; color: var(--violet); }
+  #pmodal .mstat .ml { font-size: .68rem; color: var(--mut); margin-top: 2px; }
+  #pmodal .mdivider { height: 1px; background: var(--line); margin: 18px 0; }
+  #pmodal .mdesc { font-size: .875rem; color: var(--mut); line-height: 1.75; margin-bottom: 22px; }
+  #pmodal .mdesc b { color: var(--ink); font-weight: 600; }
+  #pmodal .mactions { display: flex; gap: 10px; flex-wrap: wrap; }
+  #pmodal .mlink-primary { display: inline-flex; align-items: center; gap: 7px; background: var(--violet); color: #fff; padding: 11px 22px; border-radius: 100px; font-weight: 600; font-size: .875rem; transition: background .2s, transform .15s; }
+  #pmodal .mlink-primary:hover { background: var(--violet-d); transform: translateY(-1px); }
+  #pmodal .mlink-secondary { display: inline-flex; align-items: center; gap: 7px; border: 1.5px solid var(--line); color: var(--mut); padding: 11px 22px; border-radius: 100px; font-weight: 600; font-size: .875rem; transition: border-color .2s, color .2s; }
+  #pmodal .mlink-secondary:hover { border-color: var(--violet-l); color: var(--violet); }
+
+  /* right col: screenshot + meta */
+  #pmodal .mcol-side { display: flex; flex-direction: column; gap: 14px; }
+  #pmodal .mscreenshot { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--bg2); }
+  #pmodal .mscreenshot-chrome { background: #f0eef8; border-bottom: 1px solid var(--line); padding: 6px 10px; display: flex; align-items: center; gap: 5px; }
+  #pmodal .mscreenshot-chrome .dot-r { width: 8px; height: 8px; border-radius: 50%; background: #fc5f57; flex-shrink: 0; }
+  #pmodal .mscreenshot-chrome .dot-y { width: 8px; height: 8px; border-radius: 50%; background: #febc2e; flex-shrink: 0; }
+  #pmodal .mscreenshot-chrome .dot-g { width: 8px; height: 8px; border-radius: 50%; background: #28c840; flex-shrink: 0; }
+  #pmodal .mscreenshot-url { font-size: 10px; color: var(--mut); margin-left: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  #pmodal .mscreenshot img { width: 100%; display: block; }
+  #pmodal .mscreenshot-placeholder { width: 100%; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: .9rem; color: var(--violet); opacity: .4; text-align: center; padding: 16px; }
+  #pmodal .mside-block { background: var(--bg2); border-radius: 14px; padding: 16px; border: 1px solid var(--line); }
+  #pmodal .mside-row { padding: 9px 0; border-bottom: 1px solid var(--line); }
+  #pmodal .mside-row:last-child { border-bottom: none; padding-bottom: 0; }
+  #pmodal .mside-row:first-child { padding-top: 0; }
+  #pmodal .mside-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--faint); margin-bottom: 5px; }
+  #pmodal .mside-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  #pmodal .mside-tag { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 100px; border: 1px solid var(--line); color: var(--mut); background: #fff; }
+  #pmodal .mside-val { font-size: 13px; color: var(--ink); font-weight: 500; }
+
+  /* scrollable site preview at bottom */
+  #pmodal .mpreview { display: none; margin-top: 8px; }
+  #pmodal .mpreview.has-url { display: block; }
+
+  /* top bar: toggle left, open-in-tab right */
+  #pmodal .mpreview-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  #pmodal .mpreview-toggle {
+    display: inline-flex; align-items: center;
+    background: var(--bg2); border: 1px solid var(--line);
+    border-radius: 100px; padding: 3px; gap: 2px;
+  }
+  #pmodal .mpreview-toggle button {
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+    padding: 5px 14px; border-radius: 100px; border: none; cursor: pointer;
+    background: transparent; color: var(--mut); transition: background .2s, color .2s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  #pmodal .mpreview-toggle button.active { background: #fff; color: var(--violet); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  #pmodal .mpreview-ext { color: var(--violet); font-weight: 600; font-size: 13px; }
+
+  #pmodal .mpreview-shell { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+  #pmodal .mpreview-bar { background: #f0eef8; border-bottom: 1px solid var(--line); padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
+  #pmodal .mpreview-bar .dot-r { width: 10px; height: 10px; border-radius: 50%; background: #fc5f57; flex-shrink: 0; }
+  #pmodal .mpreview-bar .dot-y { width: 10px; height: 10px; border-radius: 50%; background: #febc2e; flex-shrink: 0; }
+  #pmodal .mpreview-bar .dot-g { width: 10px; height: 10px; border-radius: 50%; background: #28c840; flex-shrink: 0; }
+  #pmodal .mpreview-bar .purl { flex: 1; background: #fff; border-radius: 6px; padding: 4px 10px; font-size: 11px; color: var(--mut); margin-left: 6px; border: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pmodal .mpreview-toggle { display: inline-flex; align-items: center; background: rgba(0,0,0,.06); border-radius: 100px; padding: 2px; gap: 1px; flex-shrink: 0; margin-left: 6px; }
+  #pmodal .mpreview-toggle button { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 100px; border: none; cursor: pointer; background: transparent; color: var(--mut); transition: background .15s, color .15s; }
+  #pmodal .mpreview-toggle button.active { background: #fff; color: var(--violet); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+
+  /* desktop mode — iframe always 1280px, scaled to fit container */
+  #pmodal .mpreview-viewport {
+    width: 100%; overflow: hidden; position: relative;
+    background: var(--bg2); transition: height .3s;
+  }
+  #pmodal .mpreview-viewport.desktop { height: 520px; }
+  #pmodal .mpreview-viewport.mobile  { height: 640px; display: flex; justify-content: center; align-items: flex-start; padding: 16px 0; background: #e8e5f4; }
+  #pmodal .mpreview-viewport.desktop iframe {
+    width: 1280px; height: 900px; border: none;
+    transform-origin: top left; pointer-events: auto; display: block;
+  }
+  /* mobile phone shell */
+  #pmodal .mphone {
+    width: 320px; height: 600px; border-radius: 36px;
+    border: 8px solid #1a1a2e; background: #fff;
+    overflow: hidden; position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    flex-shrink: 0;
+  }
+  #pmodal .mphone-notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 90px; height: 22px; background: #1a1a2e; border-radius: 0 0 14px 14px;
+    z-index: 2;
+  }
+  #pmodal .mphone iframe {
+    width: 390px; height: 844px; border: none;
+    transform: scale(0.82); transform-origin: top left;
+    pointer-events: auto; margin-top: 8px;
+  }
+
+  #pmodal .mpreview-note { font-size: 11px; color: var(--faint); text-align: center; padding: 8px; border-top: 1px solid var(--line); background: #f9f8ff; }
+
+  /* on mobile viewports: hide sidebar screenshot, show full preview instead */
+  @media (max-width: 700px) {
+    #pmodal .mcols { grid-template-columns: 1fr; }
+    #pmodal .mcol-side { display: none; }
+    #pmodal .mbody { padding: 8px 18px 24px; }
+    #pmodal .mstats { grid-template-columns: 1fr 1fr; }
+    #pmodal .mpreview { display: block !important; }
+  }
+
+  .prow { cursor: pointer; }
+  .prow .parrow { font-size: 18px; color: var(--faint); transition: color .2s, transform .2s; }
+  .prow:hover .parrow { color: var(--violet); transform: translateX(4px); }
+
+  /* ── FOOTER ── */
+  footer { padding: 48px 0 40px; border-top: 1px solid var(--line); }
+  .footmeta { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--mut); flex-wrap: wrap; gap: 12px; }
+  .footlinks { display: flex; gap: 1.5rem; }
+  .footlinks a { color: var(--mut); transition: color .2s; }
+  .footlinks a:hover { color: var(--violet); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } .quotes { grid-template-columns: 1fr; } .ctwrap { grid-template-columns: 1fr; } }
+  @media (max-width: 820px) {
+    .svc { grid-template-columns: 1fr; }
+    .navlinks { display: none; } .burger { display: flex; }
+    .prow { grid-template-columns: 44px 1fr 28px; }
+    .prow .pmeta { display: none; }
+    body { cursor: auto; } .cur { display: none; } #peek { display: none; }
+    .prow, .submit, .calbtn, .hbtn, .burger, #mobnav .close { cursor: pointer; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .stat-item:nth-child(2) { border-right: none; }
+    .stat-item:nth-child(3) { border-right: 1px solid var(--line); border-top: 1px solid var(--line); }
+    .stat-item:nth-child(4) { border-top: 1px solid var(--line); border-right: none; }
+  }
+  @media (max-width: 640px) { .hctas { width: 100%; } .hbtn { width: 100%; } }
+  @media (max-width: 640px) {
+    .hero { padding: 88px 0 40px; }
+    .heromid { margin-top: 24px; gap: 24px; }
+    .heromid p { font-size: 15px; }
+    .avail { margin-bottom: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .orb { animation: none !important; }
+    .reveal, .word i, .hero h1 .row i { transition: none !important; opacity: 1 !important; transform: none !important; }
+    #field { opacity: .3; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="lt"><span>Orbit<span class="grad">Reach</span></span></div>
+  <div class="bar"><i></i></div>
+</div>
+
+<div id="field">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+  <div class="orb o4"></div>
+  <div class="orb ofollow"></div>
+</div>
+
+<div class="cur" id="cur"></div>
+<div class="scrollbar" id="sb"></div>
+<a class="floatcta" id="floatCta" href="#contact">Start a project →</a>
+<div id="peek"><div class="pk">●</div></div>
+
+<!-- NAV -->
+<nav>
+  <div class="inner">
+    <a class="logo" href="#" id="logoTop">Orbit<span>Reach</span></a>
+    <ul class="navlinks">
+      <li><a href="#work">Work</a></li>
+      <li><a href="#process">Process</a></li>
+      <li><a href="#contact">Contact</a></li>
+      <li><a href="#contact" class="nav-cta">Get a quote</a></li>
+    </ul>
+    <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div id="mobnav">
+  <div class="close" id="closenav">✕</div>
+  <a href="#work">Work</a>
+  <a href="#process">Process</a>
+  <a href="#contact">Contact</a>
+  <a href="#contact">Get a quote</a>
+</div>
+
+<!-- HERO -->
+<header class="hero" id="hero">
+  <canvas id="orbit-canvas" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <span class="avail"><span class="d"></span>Taking new clients</span>
+    <h1>
+      <span class="row"><i>Websites that</i></span>
+      <span class="row"><i>pull clients</i></span>
+      <span class="row"><i class="grad">into your orbit.</i></span>
+    </h1>
+    <div class="heromid">
+      <p>You have a vision and need it online — fast, clean, and built to convert. We handle design, development, and launch from a single point of contact.</p>
+      <div class="hctas">
+        <a class="hbtn hbtn-p" href="#work">See our work →</a>
+        <a class="hbtn hbtn-s" href="#contact">Start a project</a>
+      </div>
+    </div>
+  </div>
+  <div class="scrollhint"><div class="ln"></div></div>
+</header>
+
+<!-- MARQUEE -->
+<div class="marquee-section" aria-hidden="true">
+  <div class="marquee-track" id="marquee-track"></div>
+</div>
+
+<!-- STATS -->
+<div class="wrap">
+  <div class="stats-row reveal">
+    <div class="stat-item"><div class="stat-num">40+</div><div class="stat-label">Projects launched</div></div>
+    <div class="stat-item"><div class="stat-num">3×</div><div class="stat-label">Avg. conversion lift</div></div>
+    <div class="stat-item"><div class="stat-num">98%</div><div class="stat-label">Client satisfaction</div></div>
+    <div class="stat-item"><div class="stat-num">14d</div><div class="stat-label">Average delivery</div></div>
+  </div>
+</div>
+
+<!-- WORK -->
+<section id="work">
+  <div class="wrap reveal">
+    <div class="label">Selected work</div>
+    <h2 class="big" data-split>Projects we've launched.</h2>
+    <div class="plist" id="plist">
+      <div class="prow" data-i="0" data-k="Magic Touch Pet Dental">
+        <span class="yr">2025</span>
+        <div class="pinfo"><span class="pname">Magic Touch Pet Dental</span><span class="ptag">Booking platform with Stripe & Google Maps</span></div>
+        <div class="pmeta">Design · Dev<br>Next.js · Supabase · Vercel</div>
+        <span class="parrow">→</span>
+      </div>
+      <div class="prow" data-i="1" data-k="Verdant Botanics">
+        <span class="yr">2025</span>
+        <div class="pinfo"><span class="pname">Verdant Botanics</span><span class="ptag">DTC skincare e-commerce brand</span></div>
+        <div class="pmeta">Design · Dev<br>Shopify · Custom theme</div>
+        <span class="parrow">→</span>
+      </div>
+      <div class="prow" data-i="2" data-k="Crest Realty">
+        <span class="yr">2024</span>
+        <div class="pinfo"><span class="pname">Crest Realty</span><span class="ptag">Property listings & lead generation</span></div>
+        <div class="pmeta">Design · Dev<br>Next.js · MLS API</div>
+        <span class="parrow">→</span>
+      </div>
+      <div class="prow" data-i="3" data-k="Ember Kitchen">
+        <span class="yr">2024</span>
+        <div class="pinfo"><span class="pname">Ember Kitchen</span><span class="ptag">Restaurant with reservations & menus</span></div>
+        <div class="pmeta">Design · Dev<br>Webflow · Zapier</div>
+        <span class="parrow">→</span>
+      </div>
+      <div class="prow" data-i="4" data-k="Summit Legal">
+        <span class="yr">2023</span>
+        <div class="pinfo"><span class="pname">Summit Legal Group</span><span class="ptag">Law firm rebrand & client portal</span></div>
+        <div class="pmeta">Design · Dev<br>Next.js · Supabase</div>
+        <span class="parrow">→</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section id="process" class="proc-section">
+  <div class="wrap reveal">
+    <div class="label" style="text-align:center">How it works</div>
+    <h2 class="big" data-split style="text-align:center;max-width:600px;margin-left:auto;margin-right:auto;">From idea to live site, fast.</h2>
+    <div class="steps">
+      <div class="step"><h4>Discovery</h4><p>We learn your goals, audience, and brand in a focused 30-minute call. No fluff — just what we need to build something great.</p></div>
+      <div class="step"><h4>Design</h4><p>Full visual designs to review before a line of code is written. We iterate until it feels exactly right.</p></div>
+      <div class="step"><h4>Build & launch</h4><p>Production-grade code — fast, SEO-ready, mobile-first. Delivery in 14 days or we work for free until done.</p></div>
+      <div class="step"><h4>Grow</h4><p>Analytics, CMS, and an optional monthly retainer. Your site keeps working without you touching code.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="wrap reveal">
+    <div class="label">What we build</div>
+    <h2 class="big" data-split>Every type of site, one studio.</h2>
+    <div class="svc">
+      <article class="tcard" style="--gc:var(--violet)"><div class="glow"></div>
+        <div class="thead"><span class="tnum">01</span><span class="tkx">Core</span></div>
+        <h3>Marketing sites</h3>
+        <p>Landing pages, company sites, and portfolio sites engineered to convert visitors into paying clients.</p>
+        <div class="stk"><span>Next.js</span><span>Webflow</span><span>SEO</span><span>CMS</span></div>
+      </article>
+      <article class="tcard" style="--gc:var(--violet-l)"><div class="glow"></div>
+        <div class="thead"><span class="tnum">02</span></div>
+        <h3>E-commerce</h3>
+        <p>Shopify stores and custom checkout flows built to maximize average order value and reduce friction at every step.</p>
+        <div class="stk"><span>Shopify</span><span>Stripe</span><span>Custom theme</span></div>
+      </article>
+      <article class="tcard" style="--gc:var(--violet)"><div class="glow"></div>
+        <div class="thead"><span class="tnum">03</span><span class="tkx">Popular</span></div>
+        <h3>Booking platforms</h3>
+        <p>Service businesses with online scheduling, payments, and client management built directly into the site.</p>
+        <div class="stk"><span>Supabase</span><span>Stripe</span><span>Realtime</span></div>
+      </article>
+      <article class="tcard" style="--gc:var(--violet-l)"><div class="glow"></div>
+        <div class="thead"><span class="tnum">04</span></div>
+        <h3>Web apps</h3>
+        <p>Dashboards, portals, and tools for clients who need more than a brochure — full-stack development from design to deployment.</p>
+        <div class="stk"><span>Next.js</span><span>Supabase</span><span>Vercel</span><span>TypeScript</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section>
+  <div class="wrap reveal">
+    <div class="label">What clients say</div>
+    <h2 class="big" data-split>Trusted by businesses that grow.</h2>
+    <div class="quotes">
+      <div class="quote">
+        <div class="stars">★★★★★</div>
+        <p>"OrbitReach redesigned our entire site in under two weeks. Bookings went up 40% in the first month."</p>
+        <div class="who"><div class="av">S</div><div><div class="nm">Sarah M.</div><div class="rl">Owner, Magic Touch Pet Dental</div></div></div>
+      </div>
+      <div class="quote">
+        <div class="stars">★★★★★</div>
+        <p>"Professional, fast, and they genuinely understood what we needed. Best investment we made this year."</p>
+        <div class="who"><div class="av">J</div><div><div class="nm">James T.</div><div class="rl">Director, Summit Legal Group</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="wrap reveal">
+    <div class="ctwrap">
+      <div class="ctleft">
+        <div class="label">Contact</div>
+        <h2>Let's build something <span class="grad">unforgettable.</span></h2>
+        <a class="calbtn" href="mailto:hello@orbitreach.co">Book a discovery call</a>
+        <span class="ctmail">Or email us: <a href="mailto:hello@orbitreach.co">hello@orbitreach.co</a></span>
+      </div>
+      <form id="contactForm">
+        <div class="fld"><label for="n">Name</label><input id="n" name="name" type="text" placeholder="Your name" required /></div>
+        <div class="fld"><label for="e">Email</label><input id="e" name="email" type="email" placeholder="you@example.com" required /></div>
+        <div class="fld"><label for="m">Message</label><textarea id="m" name="message" placeholder="Tell me about your project…" required></textarea></div>
+        <button class="submit" type="submit">Send message →</button>
+        <div class="formstatus" id="formStatus" role="status"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="footmeta">
+      <a class="logo" href="#">Orbit<span>Reach</span></a>
+      <div class="footlinks">
+        <a href="#work">Work</a>
+        <a href="#process">Process</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <span>© 2026 OrbitReach. All rights reserved.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- PROJECT MODAL -->
+<div id="pmodal">
+  <div class="mback" id="mback"></div>
+  <div class="mbox">
+    <button class="mclose" id="mclose" aria-label="Close">✕</button>
+    <div class="mbody">
+      <div class="mcols">
+        <!-- LEFT: main content -->
+        <div class="mcol-main">
+          <div class="mtags" id="mtags"></div>
+          <div class="mtitle" id="mtitle"></div>
+          <div class="msubtitle" id="msubtitle"></div>
+          <div class="mstats" id="mstats"></div>
+          <div class="mdivider"></div>
+          <div class="mdesc" id="mdesc"></div>
+          <div class="mactions" id="mactions"></div>
+        </div>
+        <!-- RIGHT: screenshot + meta -->
+        <div class="mcol-side">
+          <div class="mscreenshot" id="mscreenshot"></div>
+          <div class="mside-block" id="mside-meta"></div>
+        </div>
+      </div>
+      <!-- FULL WIDTH: scrollable site preview -->
+      <div class="mpreview" id="mpreview"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* ── loader ── */
+  window.addEventListener('load', function () {
+    setTimeout(function () { document.getElementById('loader').classList.add('gone'); }, 1200);
+  });
+  setTimeout(function () { document.getElementById('hero').classList.add('in'); }, 1400);
+
+  /* ── orb field ── */
+  function showField() {
+    requestAnimationFrame(function () { requestAnimationFrame(function () { document.getElementById('field').classList.add('ready'); }); });
+  }
+  if (document.readyState === 'complete') setTimeout(showField, 200);
+  else window.addEventListener('load', function () { setTimeout(showField, 200); });
+
+  /* ── cursor ── */
+  if (!matchMedia('(hover:none)').matches) {
+    var cur = document.getElementById('cur');
+    var cx = innerWidth / 2, cy = innerHeight / 2, tx = cx, ty = cy;
+    addEventListener('mousemove', function (e) { tx = e.clientX; ty = e.clientY; });
+    (function loop() { cx += (tx - cx) * .2; cy += (ty - cy) * .2; cur.style.left = cx + 'px'; cur.style.top = cy + 'px'; requestAnimationFrame(loop); })();
+    document.querySelectorAll('a,button,.tcard,.prow').forEach(function (el) {
+      el.addEventListener('mouseenter', function () { cur.classList.add('big'); });
+      el.addEventListener('mouseleave', function () { cur.classList.remove('big'); });
+    });
+  }
+
+  /* ── orb follows cursor (light blend) ── */
+  if (!reduce && !matchMedia('(hover:none)').matches) {
+    var ffield = document.getElementById('field');
+    var fol = ffield && ffield.querySelector('.ofollow');
+    if (fol) {
+      var mxp = innerWidth / 2, myp = innerHeight / 2, cxp = mxp, cyp = myp;
+      addEventListener('mousemove', function (e) { mxp = e.clientX; myp = e.clientY; });
+      (function fg() {
+        cxp += (mxp - cxp) * .08; cyp += (myp - cyp) * .08;
+        var h = 0.18 * innerWidth;
+        fol.style.transform = 'translate(' + (cxp - h).toFixed(1) + 'px,' + (cyp - h).toFixed(1) + 'px)';
+        fol.style.background = 'radial-gradient(circle, rgba(167,139,250,0.4), transparent 60%)';
+        requestAnimationFrame(fg);
+      })();
+    }
+  }
+
+  /* ── scroll progress bar ── */
+  function progress() {
+    var h = document.documentElement;
+    var p = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+    document.getElementById('sb').style.width = (p * 100) + '%';
+  }
+  addEventListener('scroll', progress, { passive: true });
+
+  /* ── floating CTA ── */
+  var fcta = document.getElementById('floatCta');
+  var cSec = document.getElementById('contact');
+  var contactInView = false;
+  if (fcta && cSec) {
+    new IntersectionObserver(function (es) { es.forEach(function (e) { contactInView = e.isIntersecting; upd(); }); }, { threshold: .15 }).observe(cSec);
+    function upd() { var past = (window.scrollY || document.documentElement.scrollTop) > innerHeight * .7; if (past && !contactInView) fcta.classList.add('show'); else fcta.classList.remove('show'); }
+    addEventListener('scroll', upd, { passive: true }); upd();
+  }
+
+  /* ── split titles ── */
+  document.querySelectorAll('[data-split]').forEach(function (h) {
+    var words = h.textContent.split(' ');
+    h.innerHTML = words.map(function (w) { return '<span class="word"><i>' + w + '</i></span>'; }).join(' ');
+  });
+
+  /* ── reveal on scroll ── */
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('show'); io.unobserve(e.target); } });
+  }, { threshold: .1 });
+  document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+  /* ── marquee ── */
+  var items = ['Web Design','Next.js','Conversion Optimization','Webflow','E-commerce','Shopify','Mobile-First','SEO','React','Supabase','TypeScript','UI/UX'];
+  var track = document.getElementById('marquee-track');
+  var doubled = items.concat(items);
+  track.innerHTML = doubled.map(function (t) { return '<span class="marquee-item"><span class="marquee-dot"></span>' + t + '</span>'; }).join('');
+
+  /* ── 3D tilt cards ── */
+  document.querySelectorAll('.tcard').forEach(function (card) {
+    if (reduce) return;
+    var maxR = 5; var raf = null, le = null;
+    function apply() {
+      raf = null; if (!le) return;
+      var r = card.getBoundingClientRect();
+      var px = (le.clientX - r.left) / r.width - .5;
+      var py = (le.clientY - r.top) / r.height - .5;
+      card.style.transform = 'perspective(900px) rotateY(' + (px * maxR) + 'deg) rotateX(' + (-py * maxR) + 'deg) translateY(-4px)';
+      var g = card.querySelector('.glow'); if (g) { g.style.left = (le.clientX - r.left) + 'px'; g.style.top = (le.clientY - r.top) + 'px'; }
+    }
+    card.addEventListener('mousemove', function (e) { le = e; if (!raf) raf = requestAnimationFrame(apply); });
+    card.addEventListener('mouseleave', function () { le = null; if (raf) { cancelAnimationFrame(raf); raf = null; } card.style.transform = ''; });
+  });
+
+  /* ── project data ── */
+  var projects = [
+    {
+      title: 'Magic Touch Pet Dental',
+      subtitle: 'Non-anesthetic pet dental care — NJ & NYC',
+      year: '2025',
+      cats: ['Booking Platform', 'Service Business'],
+      screenshot: 'https://image.thum.io/get/width/600/crop/800/https://www.magictouchpetdental.com',
+      liveUrl: 'https://www.magictouchpetdental.com',
+      stats: [{ n: '200+', l: 'Pets served' }, { n: '5.0★', l: 'Average rating' }, { n: '14d', l: 'Build time' }],
+      desc: 'Magic Touch Pet Dental offers <b>non-anesthetic dental cleaning</b> for dogs and cats across New Jersey and New York City. The practice needed a site that communicated trust and warmth while driving appointment bookings.<br><br>We built a <b>full booking platform</b> with online scheduling, Stripe payments, and Google Maps location integration. The site includes a before/after gallery, FAQ section, gift card purchasing, and a client portal for appointment history.',
+      stk: ['Next.js 14', 'Supabase', 'Stripe', 'Google Maps API', 'Vercel', 'TypeScript']
+    },
+    {
+      title: 'Verdant Botanics',
+      subtitle: 'DTC skincare e-commerce brand',
+      year: '2025',
+      cats: ['E-commerce', 'Skincare'],
+      screenshot: null,
+      liveUrl: null,
+      stats: [{ n: '3×', l: 'Conv. lift' }, { n: '48h', l: 'Build time' }, { n: '98', l: 'Lighthouse score' }],
+      desc: 'A direct-to-consumer skincare brand launching their first online store. The brief called for a <b>clean, editorial feel</b> that elevated the product photography and drove first-time buyers to checkout.<br><br>We built a fully custom Shopify theme with <b>subscription support</b>, bundle builder, loyalty integration, and a quiz-based product recommender.',
+      stk: ['Shopify', 'Liquid', 'Custom theme', 'ReCharge', 'Klaviyo']
+    },
+    {
+      title: 'Crest Realty',
+      subtitle: 'Property listings & lead generation',
+      year: '2024',
+      cats: ['Real Estate', 'Lead Gen'],
+      screenshot: null,
+      liveUrl: null,
+      stats: [{ n: '2×', l: 'Lead volume' }, { n: '800+', l: 'Listings synced' }, { n: '14d', l: 'Build time' }],
+      desc: 'A regional real estate brokerage needed a modern site to replace their outdated IDX provider. We built a <b>custom MLS-connected listing portal</b> with map search, saved searches, and CRM integration for automated lead routing to agents.',
+      stk: ['Next.js', 'MLS / RETS API', 'Mapbox', 'Supabase', 'Vercel']
+    },
+    {
+      title: 'Ember Kitchen',
+      subtitle: 'Restaurant site with reservations & menus',
+      year: '2024',
+      cats: ['Hospitality', 'Restaurant'],
+      screenshot: null,
+      liveUrl: null,
+      stats: [{ n: '40%', l: 'Online bookings' }, { n: '5d', l: 'Build time' }, { n: '99', l: 'Lighthouse score' }],
+      desc: 'Ember Kitchen is a farm-to-table restaurant that needed a site as warm as their food. We built a <b>seasonal menu system</b> the team can update themselves, online reservation integration with OpenTable, and a private events inquiry flow.',
+      stk: ['Webflow', 'OpenTable API', 'Zapier', 'CMS']
+    },
+    {
+      title: 'Summit Legal Group',
+      subtitle: 'Law firm rebrand & client portal',
+      year: '2023',
+      cats: ['Professional Services', 'Legal'],
+      screenshot: null,
+      liveUrl: null,
+      stats: [{ n: '60%', l: 'More inquiries' }, { n: '21d', l: 'Build time' }, { n: '2', l: 'Portals built' }],
+      desc: 'A multi-practice law firm needed to modernize their web presence and give clients a <b>secure portal</b> for document sharing and case status updates. We rebuilt the marketing site and built a bespoke client dashboard with role-based access.',
+      stk: ['Next.js', 'Supabase', 'Auth', 'Vercel', 'TypeScript']
+    }
+  ];
+
+  /* ── modal ── */
+  var pmodal = document.getElementById('pmodal');
+
+  function openModal(i) {
+    var p = projects[i];
+
+    /* tags */
+    document.getElementById('mtags').innerHTML =
+      p.cats.map(function(c){ return '<span class="mtag">'+c+'</span>'; }).join('') +
+      '<span class="mtag" style="background:transparent;border:1px solid var(--line);color:var(--mut);">'+p.year+'</span>';
+    document.getElementById('mtitle').textContent = p.title;
+    document.getElementById('msubtitle').textContent = p.subtitle;
+
+    /* stats */
+    document.getElementById('mstats').innerHTML = p.stats.map(function(s){
+      return '<div class="mstat"><div class="mn">'+s.n+'</div><div class="ml">'+s.l+'</div></div>';
+    }).join('');
+
+    /* desc */
+    document.getElementById('mdesc').innerHTML = p.desc;
+
+    /* actions */
+    var acts = '';
+    if (p.liveUrl) acts += '<a class="mlink-primary" href="'+p.liveUrl+'" target="_blank" rel="noopener">Visit live site ↗</a>';
+    acts += '<a class="mlink-secondary" href="#contact" onclick="document.getElementById(\'pmodal\').classList.remove(\'open\');document.body.style.overflow=\'\';">Work with us →</a>';
+    document.getElementById('mactions').innerHTML = acts;
+
+    /* RIGHT: screenshot with browser chrome */
+    var ms = document.getElementById('mscreenshot');
+    if (p.screenshot) {
+      var urlLabel = p.liveUrl ? p.liveUrl.replace('https://','') : '';
+      ms.innerHTML =
+        '<div class="mscreenshot-chrome"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span><span class="mscreenshot-url">'+urlLabel+'</span></div>' +
+        '<img src="'+p.screenshot+'" alt="'+p.title+' screenshot" loading="lazy" onerror="this.parentNode.innerHTML=\'<div class=mscreenshot-placeholder>'+p.title+'</div>\'">';
+    } else {
+      ms.innerHTML = '<div class="mscreenshot-placeholder">'+p.title+'</div>';
+    }
+
+    /* RIGHT: tech stack + meta block */
+    var meta = document.getElementById('mside-meta');
+    meta.innerHTML =
+      '<div class="mside-row"><div class="mside-label">Tech stack</div><div class="mside-tags">'+
+        p.stk.map(function(s){ return '<span class="mside-tag">'+s+'</span>'; }).join('') +
+      '</div></div>' +
+      '<div class="mside-row"><div class="mside-label">Services</div><div class="mside-val">Design · Development · Launch</div></div>' +
+      '<div class="mside-row"><div class="mside-label">Year</div><div class="mside-val">'+p.year+'</div></div>';
+
+    /* live scrollable preview */
+    var mprev = document.getElementById('mpreview');
+    if (p.liveUrl) {
+      mprev.className = 'mpreview has-url';
+      mprev.innerHTML =
+        '<div class="mpreview-shell" id="preview-shell">' +
+          '<div class="mpreview-bar">' +
+            '<span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>' +
+            '<div class="purl">'+p.liveUrl+'</div>' +
+            '<div class="mpreview-toggle">' +
+              '<button class="active" id="btn-desktop" onclick="switchPreview(\'desktop\')">🖥 Desktop</button>' +
+              '<button id="btn-mobile" onclick="switchPreview(\'mobile\')">📱 Mobile</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="mpreview-viewport desktop" id="preview-viewport">' +
+            '<iframe id="preview-iframe" src="'+p.liveUrl+'" title="'+p.title+' preview" loading="lazy" allow="fullscreen" style="width:1280px;border:none;transform-origin:top left;pointer-events:auto;display:block;"></iframe>' +
+          '</div>' +
+          '<div class="mpreview-note">Scroll inside to explore &nbsp;·&nbsp; <a href="'+p.liveUrl+'" target="_blank" rel="noopener" style="color:var(--violet);font-weight:600;">Open in new tab ↗</a></div>' +
+        '</div>';
+    } else {
+      mprev.className = 'mpreview';
+      mprev.innerHTML = '';
+    }
+
+    pmodal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    pmodal.querySelector('.mbox').scrollTop = 0;
+    setTimeout(scaleDesktopIframe, 50);
+    setTimeout(scaleDesktopIframe, 450);
+  }
+
+  window.addEventListener('resize', scaleDesktopIframe);
+
+  /* scale desktop iframe to fit its container */
+  function scaleDesktopIframe() {
+    var vp = document.getElementById('preview-viewport');
+    var fr = document.getElementById('preview-iframe');
+    if (!vp || !fr || !vp.classList.contains('desktop')) return;
+    var containerW = vp.getBoundingClientRect().width;
+    var scale = containerW / 1280;
+    var vpH = 520; /* desired visible height in px */
+    var iframeH = Math.round(vpH / scale);
+    fr.style.width = '1280px';
+    fr.style.height = iframeH + 'px';
+    fr.style.transform = 'scale(' + scale + ')';
+    fr.style.transformOrigin = 'top left';
+    vp.style.height = vpH + 'px';
+  }
+
+  /* desktop / mobile toggle */
+  window.switchPreview = function(mode) {
+    var vp = document.getElementById('preview-viewport');
+    var iframe = document.getElementById('preview-iframe');
+    var btnD = document.getElementById('btn-desktop');
+    var btnM = document.getElementById('btn-mobile');
+    if (!vp || !iframe) return;
+
+    var url = iframe.src;
+    /* blank first so it reloads fresh at new size */
+    iframe.src = 'about:blank';
+
+    if (mode === 'mobile') {
+      vp.className = 'mpreview-viewport mobile';
+      vp.innerHTML =
+        '<div class="mphone">' +
+          '<div class="mphone-notch"></div>' +
+          '<iframe id="preview-iframe" src="'+url+'" title="Mobile preview" loading="lazy" allow="fullscreen"></iframe>' +
+        '</div>';
+      btnD.classList.remove('active'); btnM.classList.add('active');
+    } else {
+      vp.className = 'mpreview-viewport desktop';
+      vp.innerHTML = '<iframe id="preview-iframe" src="'+url+'" title="Desktop preview" loading="lazy" allow="fullscreen" style="width:1280px;border:none;transform-origin:top left;pointer-events:auto;display:block;"></iframe>';
+      btnD.classList.add('active'); btnM.classList.remove('active');
+      setTimeout(scaleDesktopIframe, 50);
+    }
+  };
+
+  function closeModal() {
+    pmodal.classList.remove('open');
+    document.body.style.overflow = '';
+    var fr = pmodal.querySelector('iframe');
+    if (fr) fr.src = 'about:blank';
+  }
+
+  document.getElementById('mclose').addEventListener('click', closeModal);
+  document.getElementById('mback').addEventListener('click', closeModal);
+  addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
+
+  /* ── project rows — peek (screenshot) + click ── */
+  var peek = document.getElementById('peek'), ptx = 0, pty = 0, pcx = 0, pcy = 0;
+  addEventListener('mousemove', function (e) { ptx = e.clientX; pty = e.clientY; });
+  (function pl() { pcx += (ptx - pcx) * .12; pcy += (pty - pcy) * .12; peek.style.left = pcx + 'px'; peek.style.top = pcy + 'px'; requestAnimationFrame(pl); })();
+
+  document.querySelectorAll('.prow').forEach(function (row) {
+    var i = +row.dataset.i;
+    var p = projects[i];
+    /* preload screenshot */
+    if (p.screenshot) {
+      var pre = new Image(); pre.src = p.screenshot;
+    }
+    row.addEventListener('mouseenter', function () {
+      if (p.screenshot) {
+        peek.innerHTML = '<img src="'+p.screenshot+'" alt="'+p.title+'" style="width:100%;height:100%;object-fit:cover;object-position:top center;">';
+      } else {
+        peek.innerHTML = '<div class="pk" style="color:var(--violet);font-family:\'Clash Display\',sans-serif;font-weight:700;font-size:16px;padding:20px;text-align:center;line-height:1.3;">'+p.title+'</div>';
+      }
+      peek.classList.add('on');
+    });
+    row.addEventListener('mouseleave', function () { peek.classList.remove('on'); });
+    row.addEventListener('click', function () { openModal(i); });
+  });
+
+  /* ── mobile nav ── */
+  var mob = document.getElementById('mobnav');
+  function closeNav() { mob.classList.remove('open'); document.body.style.overflow = ''; }
+  document.getElementById('burger').addEventListener('click', function () { mob.classList.add('open'); document.body.style.overflow = 'hidden'; });
+  document.getElementById('closenav').addEventListener('click', closeNav);
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) { a.addEventListener('click', closeNav); });
+
+  /* ── logo scroll top ── */
+  var logoTop = document.getElementById('logoTop');
+  if (logoTop) logoTop.addEventListener('click', function (e) { e.preventDefault(); closeNav(); window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); });
+
+  /* ── orbit canvas ── */
+  (function () {
+    var canvas = document.getElementById('orbit-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var hero = document.getElementById('hero');
+    var dpr  = window.devicePixelRatio || 1;
+    var W, H, cx, cy;
+
+    function resize() {
+      var rect = hero.getBoundingClientRect();
+      W = rect.width; H = rect.height;
+      canvas.width  = W * dpr; canvas.height = H * dpr;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      /* center horizontally, sit about 75% down vertically
+         so rings rise up through the content like the reference */
+      cx = W * 0.5;
+      cy = W < 768 ? H * 0.60 : H * 0.82;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    /* 6 rings. radii scale with viewport width so they always feel large.
+       spd in rad/s — outer rings move slower.
+       dots: a=angle, sz=px radius, col= rgba string                      */
+    function cfg() {
+      var base = Math.min(W, 1400) * (W < 768 ? 0.72 : 0.62);
+      return [
+        { r: base * 0.16, spd:  0.32, op: 0.18, dots: [
+            { a: 1.1,  sz: 3.5, col: '124,58,237', dop: 0.75 },
+            { a: 4.0,  sz: 2,   col: '167,139,250', dop: 0.45 }
+        ]},
+        { r: base * 0.30, spd: -0.19, op: 0.14, dots: [
+            { a: 2.6,  sz: 5,   col: '124,58,237', dop: 0.6  },
+            { a: 5.2,  sz: 2,   col: '167,139,250', dop: 0.4  },
+            { a: 0.8,  sz: 3,   col: '124,58,237', dop: 0.5  }
+        ]},
+        { r: base * 0.46, spd:  0.12, op: 0.11, dots: [
+            { a: 0.4,  sz: 4,   col: '124,58,237', dop: 0.55 },
+            { a: 3.9,  sz: 2.5, col: '167,139,250', dop: 0.38 },
+            { a: 2.2,  sz: 1.5, col: '167,139,250', dop: 0.3  }
+        ]},
+        { r: base * 0.63, spd: -0.075, op: 0.09, dots: [
+            { a: 4.1,  sz: 5.5, col: '124,58,237', dop: 0.5  },
+            { a: 1.5,  sz: 2,   col: '167,139,250', dop: 0.35 },
+            { a: 5.8,  sz: 3,   col: '124,58,237', dop: 0.42 }
+        ]},
+        { r: base * 0.82, spd:  0.048, op: 0.07, dots: [
+            { a: 1.8,  sz: 4,   col: '124,58,237', dop: 0.4  },
+            { a: 4.8,  sz: 2,   col: '167,139,250', dop: 0.3  },
+            { a: 3.2,  sz: 1.5, col: '167,139,250', dop: 0.25 }
+        ]},
+        { r: base * 1.00, spd: -0.03, op: 0.05, dots: [
+            { a: 0.9,  sz: 6,   col: '124,58,237', dop: 0.38 },
+            { a: 3.5,  sz: 2.5, col: '167,139,250', dop: 0.28 },
+            { a: 5.5,  sz: 1.5, col: '124,58,237', dop: 0.3  },
+            { a: 2.1,  sz: 3.5, col: '167,139,250', dop: 0.22 }
+        ]}
+      ];
+    }
+    var rings = cfg();
+    window.addEventListener('resize', function () { rings = cfg(); });
+
+    var last = null;
+    function draw(ts) {
+      if (!last) last = ts;
+      var dt = Math.min((ts - last) / 1000, 0.05);
+      last = ts;
+      ctx.clearRect(0, 0, W, H);
+
+      rings.forEach(function (ring) {
+        /* advance dots */
+        ring.dots.forEach(function (d) { d.a += ring.spd * dt; });
+
+        /* ring — thin solid line */
+        ctx.beginPath();
+        ctx.arc(cx, cy, ring.r, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(13,11,26,' + ring.op + ')';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        /* dots — plain filled circles, zero glow */
+        ring.dots.forEach(function (d) {
+          var x = cx + Math.cos(d.a) * ring.r;
+          var y = cy + Math.sin(d.a) * ring.r;
+          ctx.beginPath();
+          ctx.arc(x, y, d.sz, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + d.col + ',' + d.dop + ')';
+          ctx.fill();
+        });
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    setTimeout(function () { canvas.classList.add('ready'); }, 1400);
+    requestAnimationFrame(draw);
+  })();
+
+  /* ── contact form ── */
+  var cform = document.getElementById('contactForm');
+  if (cform) {
+    cform.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var status = document.getElementById('formStatus');
+      var btn = cform.querySelector('.submit');
+      var old = btn.textContent; btn.disabled = true; btn.textContent = 'Sending…'; status.textContent = '';
+      setTimeout(function () {
+        status.textContent = 'Thanks! We\'ll be in touch within 24 hours.';
+        status.className = 'formstatus ok'; cform.reset();
+        btn.disabled = false; btn.textContent = old;
+      }, 1200);
+    });
+  }
+})();
+</script>
+</body>
+</html>

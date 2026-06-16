@@ -1,5 +1,5 @@
 # OrbitReach Studio Portal — Project State
-**Last updated:** v1.2.1
+**Last updated:** v1.2.2
 
 ## Live URLs
 - **Site:** https://orbit-reach-sigma.vercel.app
@@ -13,7 +13,7 @@ git add -A && git commit -m "Claude: description" && git push
 ```
 Token stored in remote URL. Vercel auto-deploys (~60s). Always bump version in `app/login/page.tsx`.
 
-**Current version:** v1.2.1
+**Current version:** v1.2.2
 
 ## Auth
 - Admin: joao@sundegomes.com
