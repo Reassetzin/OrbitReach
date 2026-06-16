@@ -4,7 +4,7 @@ import { createClient } from '@/supabase/client'
 
 const STEPS = [
   { label: 'Submitted',   icon: '📥' },
-  { label: 'In Progress', icon: '⚙️' },
+  { label: 'In Progress', icon: '⚙️'  },
   { label: 'In Review',   icon: '👀' },
   { label: 'Completed',   icon: '✅' },
 ]
@@ -16,6 +16,16 @@ const REQ_STATUS: Record<string, { bg: string; color: string; label: string }> =
   declined: { bg: '#FEF2F2', color: '#EF4444', label: 'Declined'   },
 }
 
+async function uploadToStorage(file: File, folder: string): Promise<string | null> {
+  const supabase = createClient()
+  const ext = file.name.split('.').pop()
+  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const { error } = await supabase.storage.from('client-uploads').upload(path, file, { upsert: false })
+  if (error) { console.error('Upload error:', error); return null }
+  const { data } = supabase.storage.from('client-uploads').getPublicUrl(path)
+  return data.publicUrl
+}
+
 export default function PortalHomePage() {
   const [client, setClient]             = useState<any>(null)
   const [clientTasks, setClientTasks]   = useState<any[]>([])
@@ -24,14 +34,16 @@ export default function PortalHomePage() {
   const [loading, setLoading]           = useState(true)
   const [modal, setModal]               = useState<any>(null)
   const [taskResp, setTaskResp]         = useState('')
-  const [taskFile, setTaskFile]         = useState('')
+  const [taskFile, setTaskFile]         = useState<File | null>(null)
+  const [taskFileName, setTaskFileName] = useState('')
   const [savingTask, setSavingTask]     = useState(false)
   const [msgText, setMsgText]           = useState('')
   const [sending, setSending]           = useState(false)
   const [reqTitle, setReqTitle]         = useState('')
   const [reqDesc, setReqDesc]           = useState('')
   const [reqLink, setReqLink]           = useState('')
-  const [reqFile, setReqFile]           = useState('')
+  const [reqFile, setReqFile]           = useState<File | null>(null)
+  const [reqFileName, setReqFileName]   = useState('')
   const [submitting, setSubmitting]     = useState(false)
   const [reqSuccess, setReqSuccess]     = useState(false)
   const [reqError, setReqError]         = useState('')
@@ -73,10 +85,17 @@ export default function PortalHomePage() {
     if (!modal) return
     setSavingTask(true)
     const supabase = createClient()
-    const resp = taskFile ? `File: ${taskFile}${taskResp ? ' — ' + taskResp : ''}` : taskResp || 'Submitted'
+    let fileUrl = ''
+    if (taskFile) {
+      const url = await uploadToStorage(taskFile, `tasks/${modal.client_id}`)
+      fileUrl = url ? url : taskFileName
+    }
+    const resp = fileUrl
+      ? `File: ${fileUrl}${taskResp ? ' — ' + taskResp : ''}`
+      : taskResp || 'Submitted'
     await supabase.from('client_tasks').update({ done: true, response: resp }).eq('id', modal.id)
     setClientTasks(t => t.map(x => x.id === modal.id ? { ...x, done: true, response: resp } : x))
-    setModal(null); setTaskResp(''); setTaskFile(''); setSavingTask(false)
+    setModal(null); setTaskResp(''); setTaskFile(null); setTaskFileName(''); setSavingTask(false)
   }
 
   async function sendMessage() {
@@ -92,11 +111,17 @@ export default function PortalHomePage() {
     const left = Math.max(0, (client.monthly_revisions ?? 5) - (client.revisions_used ?? 0))
     setSubmitting(true); setReqError('')
     const supabase = createClient()
-    const title = reqFile ? `${reqTitle.trim()} [📎 ${reqFile}]` : reqTitle.trim()
+    let fileUrl = ''
+    if (reqFile) {
+      const url = await uploadToStorage(reqFile, `requests/${client.id}`)
+      fileUrl = url ?? reqFileName
+    }
+    const title = fileUrl ? `${reqTitle.trim()} [📎 ${reqFileName}]` : reqTitle.trim()
     const { data } = await supabase.from('requests').insert({
       client_id: client.id, title,
       description: reqDesc.trim() || null,
       link: reqLink.trim() || null,
+      file_url: fileUrl || null,
       status: left <= 0 ? 'backlog' : 'pending'
     }).select().single()
     if (data) {
@@ -106,7 +131,7 @@ export default function PortalHomePage() {
         setClient((c: any) => ({ ...c, revisions_used: (c.revisions_used ?? 0) + 1 }))
       }
     }
-    setReqTitle(''); setReqDesc(''); setReqLink(''); setReqFile('')
+    setReqTitle(''); setReqDesc(''); setReqLink(''); setReqFile(null); setReqFileName('')
     setSubmitting(false); setReqSuccess(true)
     setTimeout(() => setReqSuccess(false), 3000)
   }
@@ -132,12 +157,13 @@ export default function PortalHomePage() {
     </div>
   )
 
-  const tasksDone = clientTasks.filter(t => t.done).length
-  const left      = Math.max(0, (client.monthly_revisions ?? 5) - (client.revisions_used ?? 0))
-  const pct       = Math.min(100, Math.round(((client.revisions_used ?? 0) / (client.monthly_revisions ?? 5)) * 100))
-  const step      = client.progress_step ?? 1
-  const pending   = clientTasks.filter(t => !t.done)
-  const done      = clientTasks.filter(t => t.done)
+  const firstName   = client.name?.split(' ')[0] ?? client.name
+  const tasksDone   = clientTasks.filter(t => t.done).length
+  const left        = Math.max(0, (client.monthly_revisions ?? 5) - (client.revisions_used ?? 0))
+  const pct         = Math.min(100, Math.round(((client.revisions_used ?? 0) / (client.monthly_revisions ?? 5)) * 100))
+  const step        = client.progress_step ?? 1
+  const pending     = clientTasks.filter(t => !t.done)
+  const done        = clientTasks.filter(t => t.done)
 
   const S = {
     page:    { fontFamily: 'Inter, sans-serif', background: '#F5F6FA', minHeight: '100vh', paddingBottom: 40 } as any,
@@ -155,6 +181,9 @@ export default function PortalHomePage() {
         .step-line { position: absolute; top: 18px; left: 50%; right: -50%; height: 2px; z-index: 0; }
         .msg-bubble-in  { background: #F1F5F9; border-radius: 4px 16px 16px 16px; padding: 10px 14px; max-width: 78%; }
         .msg-bubble-out { background: linear-gradient(135deg,#6C63FF,#A855F7); border-radius: 16px 4px 16px 16px; padding: 10px 14px; max-width: 78%; }
+        .upload-zone { border: 1.5px dashed #D1D5DB; border-radius: 12px; padding: 18px 14px; text-align: center; cursor: pointer; background: #F8FAFC; transition: border-color .2s, background .2s; }
+        .upload-zone:hover { border-color: #6C63FF; background: #F0EEFF; }
+        .upload-zone.has-file { border-color: #6C63FF; background: #F0EEFF; }
       `}</style>
 
       {/* Request history panel */}
@@ -178,6 +207,11 @@ export default function PortalHomePage() {
                     </div>
                     {r.description && <div style={{ fontSize: 13, color: '#64748B', marginBottom: 8, lineHeight: 1.5 }}>{r.description}</div>}
                     {r.link && <a href={r.link} target="_blank" style={{ fontSize: 12, color: '#6C63FF', display: 'block', marginBottom: 6 }}>{r.link}</a>}
+                    {r.file_url && (
+                      <a href={r.file_url} target="_blank" style={{ fontSize: 12, color: '#6C63FF', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                        📎 View attached file
+                      </a>
+                    )}
                     <div style={{ fontSize: 12, color: '#94A3B8' }}>{new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                   </div>
                 )
@@ -190,28 +224,54 @@ export default function PortalHomePage() {
       {/* Task modal */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'flex-end' }}
-          onClick={e => e.target === e.currentTarget && (setModal(null), setTaskResp(''), setTaskFile(''))}>
+          onClick={e => e.target === e.currentTarget && (setModal(null), setTaskResp(''), setTaskFile(null), setTaskFileName(''))}>
           <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: 24, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ width: 36, height: 4, background: '#E8EAF0', borderRadius: 999, margin: '0 auto 20px' }}/>
             <div style={{ fontSize: 28, marginBottom: 8 }}>{modal.emoji}</div>
             <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6, color: '#0D0D1A' }}>{modal.title}</div>
             <div style={{ fontSize: 14, color: '#64748B', marginBottom: 20, lineHeight: 1.6 }}>{modal.description}</div>
-            <div onClick={() => taskFileRef.current?.click()}
-              style={{ border: '1.5px dashed #D1D5DB', borderRadius: 12, padding: 20, textAlign: 'center', marginBottom: 14, cursor: 'pointer', background: '#F8FAFC' }}>
-              <div style={{ fontSize: 24, marginBottom: 6 }}>📎</div>
-              <div style={{ fontSize: 14, color: taskFile ? '#6C63FF' : '#64748B', fontWeight: taskFile ? 600 : 400 }}>{taskFile ? '✓ ' + taskFile : 'Tap to attach a file'}</div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>PNG, PDF, SVG, ZIP, DOCX</div>
+
+            {/* File upload zone */}
+            <div
+              className={`upload-zone${taskFileName ? ' has-file' : ''}`}
+              onClick={() => taskFileRef.current?.click()}
+              style={{ marginBottom: 14 }}
+            >
+              {taskFileName ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }} fill="none" stroke="#6C63FF" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span style={{ fontSize: 14, color: '#6C63FF', fontWeight: 600 }}>{taskFileName}</span>
+                  <button onClick={e => { e.stopPropagation(); setTaskFile(null); setTaskFileName('') }}
+                    style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}>✕</button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 24, marginBottom: 6 }}>📎</div>
+                  <div style={{ fontSize: 14, color: '#64748B', fontWeight: 500 }}>Tap to attach a file</div>
+                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>PNG, PDF, SVG, ZIP, DOCX — up to 50MB</div>
+                </>
+              )}
             </div>
-            <input ref={taskFileRef} type="file" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) setTaskFile(f.name) }}/>
+            <input ref={taskFileRef} type="file" style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) { setTaskFile(f); setTaskFileName(f.name) }}}/>
+
             <textarea value={taskResp} onChange={e => setTaskResp(e.target.value)} rows={4}
               placeholder={modal.type === 'file' ? 'Add a note (optional)…' : modal.type === 'review' ? 'Approved! / Please change…' : 'Your response…'}
               style={{ width: '100%', fontSize: 15, padding: '12px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', resize: 'none', boxSizing: 'border-box' }}/>
+
+            {savingTask && taskFile && (
+              <div style={{ fontSize: 13, color: '#6C63FF', marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                Uploading file…
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <button onClick={() => { setModal(null); setTaskResp(''); setTaskFile('') }}
+              <button onClick={() => { setModal(null); setTaskResp(''); setTaskFile(null); setTaskFileName('') }}
                 style={{ flex: 1, padding: 14, background: '#F5F6FA', color: '#64748B', border: '1px solid #E8EAF0', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
               <button onClick={completeTask} disabled={savingTask}
-                style={{ flex: 2, padding: 14, background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-                {savingTask ? 'Submitting…' : 'Submit & done ✓'}
+                style={{ flex: 2, padding: 14, background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: savingTask ? 0.7 : 1 }}>
+                {savingTask ? 'Uploading…' : 'Submit & done ✓'}
               </button>
             </div>
           </div>
@@ -220,23 +280,32 @@ export default function PortalHomePage() {
 
       <div className="portal-content">
 
-        {/* ── HERO BANNER ── */}
+        {/* ── WELCOME HERO ── */}
         <div style={{ background: 'linear-gradient(135deg,#6C63FF 0%,#A855F7 100%)', borderRadius: 20, padding: '24px 22px', color: '#fff', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(108,99,255,.3)' }}>
           <div style={{ position: 'absolute', top: -30, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,.08)' }}/>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', opacity: .7, marginBottom: 4, position: 'relative' }}>{client.type}</div>
-          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 4, position: 'relative' }}>{client.name}</div>
-          <div style={{ fontSize: 14, opacity: .75, marginBottom: 20, position: 'relative' }}>Active plan · ${client.monthly_retainer}/month</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, position: 'relative' }}>
-            {[
-              { val: `${tasksDone}/${clientTasks.length}`, lbl: 'Tasks done' },
-              { val: `${left} left`, lbl: 'Requests left' },
-              { val: client.next_payment ?? 'TBD', lbl: 'Next payment' },
-            ].map(s => (
-              <div key={s.lbl} style={{ background: 'rgba(255,255,255,.18)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
-                <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>{s.val}</div>
-                <div style={{ fontSize: 11, opacity: .75, marginTop: 4, lineHeight: 1.3 }}>{s.lbl}</div>
-              </div>
-            ))}
+          <div style={{ position: 'absolute', bottom: -20, left: 60, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }}/>
+          <div style={{ position: 'relative' }}>
+            <div style={{ fontSize: 13, opacity: .75, marginBottom: 4 }}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 2 }}>
+              Welcome back, {firstName} 👋
+            </div>
+            <div style={{ fontSize: 14, opacity: .75, marginBottom: 20 }}>
+              {client.type} · ${client.monthly_retainer}/month
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              {[
+                { val: `${tasksDone}/${clientTasks.length}`, lbl: 'Tasks done' },
+                { val: `${left} left`,                       lbl: 'Revisions' },
+                { val: client.next_payment ?? 'TBD',         lbl: 'Next payment' },
+              ].map(s => (
+                <div key={s.lbl} style={{ background: 'rgba(255,255,255,.18)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>{s.val}</div>
+                  <div style={{ fontSize: 11, opacity: .75, marginTop: 4, lineHeight: 1.3 }}>{s.lbl}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -253,7 +322,6 @@ export default function PortalHomePage() {
                     {isDone ? <svg viewBox="0 0 24 24" style={{ width: 16, height: 16 }} fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ color: isActive ? '#fff' : '#CBD5E1', fontSize: 16 }}>{s.icon}</span>}
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center', color: isDone ? '#10B981' : isActive ? '#6C63FF' : '#94A3B8', lineHeight: 1.3, padding: '0 4px' }}>{s.label}</div>
-                  {isActive && s.label === 'In Review' && <div style={{ fontSize: 10, color: '#F59E0B', fontWeight: 700, marginTop: 4, textAlign: 'center' }}>⚠ Your input needed</div>}
                 </div>
               )
             })}
@@ -272,7 +340,7 @@ export default function PortalHomePage() {
           <div style={S.pad}>
             {pending.length === 0 && done.length === 0 && <div style={{ textAlign: 'center', padding: '24px 0', color: '#94A3B8', fontSize: 14 }}>No action items yet 🎉</div>}
             {pending.map(t => (
-              <div key={t.id} onClick={() => { setModal(t); setTaskResp(''); setTaskFile('') }}
+              <div key={t.id} onClick={() => { setModal(t); setTaskResp(''); setTaskFile(null); setTaskFileName('') }}
                 style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: '#EEF0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{t.emoji}</div>
                 <div style={{ flex: 1 }}>
@@ -316,7 +384,6 @@ export default function PortalHomePage() {
             )}
           </div>
           <div style={{ ...S.pad, paddingTop: 16 }}>
-            {/* Revision bar */}
             <div style={{ background: '#F8FAFC', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#0D0D1A' }}>{left} of {client.monthly_revisions ?? 5} revisions left</span>
@@ -334,15 +401,34 @@ export default function PortalHomePage() {
                 style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', resize: 'none', boxSizing: 'border-box', width: '100%' }}/>
               <input value={reqLink} onChange={e => setReqLink(e.target.value)} placeholder="Reference link (optional)"
                 style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', boxSizing: 'border-box', width: '100%' }}/>
-              <div onClick={() => reqFileRef.current?.click()}
-                style={{ border: '1.5px dashed #D1D5DB', borderRadius: 10, padding: '16px 14px', textAlign: 'center', cursor: 'pointer', background: '#F8FAFC' }}>
-                <div style={{ fontSize: 14, color: reqFile ? '#6C63FF' : '#64748B', fontWeight: reqFile ? 600 : 400 }}>{reqFile ? '📎 ' + reqFile : '📎  Attach a file (optional)'}</div>
+
+              {/* File upload zone */}
+              <div
+                className={`upload-zone${reqFileName ? ' has-file' : ''}`}
+                onClick={() => reqFileRef.current?.click()}
+              >
+                {reqFileName ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }} fill="none" stroke="#6C63FF" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span style={{ fontSize: 14, color: '#6C63FF', fontWeight: 600 }}>{reqFileName}</span>
+                    <button onClick={e => { e.stopPropagation(); setReqFile(null); setReqFileName('') }}
+                      style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}>✕</button>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 20, marginBottom: 4 }}>📎</div>
+                    <div style={{ fontSize: 14, color: '#64748B', fontWeight: 500 }}>Attach a file (optional)</div>
+                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>PNG, PDF, SVG, ZIP, DOCX — up to 50MB</div>
+                  </>
+                )}
               </div>
-              <input ref={reqFileRef} type="file" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) setReqFile(f.name) }}/>
+              <input ref={reqFileRef} type="file" style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) { setReqFile(f); setReqFileName(f.name) }}}/>
+
               {reqError && <div style={{ fontSize: 13, color: '#EF4444', background: '#FEF2F2', padding: '10px 14px', borderRadius: 8 }}>{reqError}</div>}
               <button onClick={submitRequest} disabled={submitting}
-                style={{ padding: '15px', background: reqSuccess ? 'linear-gradient(135deg,#10B981,#059669)' : 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-                {reqSuccess ? '✓ Request submitted!' : submitting ? 'Submitting…' : left <= 0 ? 'Add to next month →' : 'Submit request →'}
+                style={{ padding: '15px', background: reqSuccess ? 'linear-gradient(135deg,#10B981,#059669)' : 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: submitting ? 0.7 : 1 }}>
+                {reqSuccess ? '✓ Request submitted!' : submitting ? 'Uploading & submitting…' : left <= 0 ? 'Add to next month →' : 'Submit request →'}
               </button>
             </div>
           </div>
