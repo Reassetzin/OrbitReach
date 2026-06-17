@@ -22,7 +22,20 @@ export default function AdminDashboard() {
   const [resetMsg, setResetMsg]   = useState('')
   const [selectedReq, setSelectedReq] = useState<any>(null)
 
-  async function resetRevisions() {
+  async function downloadFile(url: string, filename?: string) {
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename || url.split('/').pop() || 'file'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch { alert('Download failed. Try opening the file directly.') }
+  }
     if (!confirm('Reset all client revision counts to 0? This cannot be undone.')) return
     setResetting(true); setResetMsg('')
     try {
@@ -290,14 +303,12 @@ export default function AdminDashboard() {
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 {requests.some(r => r.file_url) && (
-                  <button onClick={() => {
-                    requests.filter(r => r.file_url).forEach((r, i) => {
-                      setTimeout(() => {
-                        const a = document.createElement('a')
-                        a.href = r.file_url; a.download = ''; a.target = '_blank'
-                        document.body.appendChild(a); a.click(); document.body.removeChild(a)
-                      }, i * 400)
-                    })
+                  <button onClick={async () => {
+                    const withFiles = requests.filter(r => r.file_url)
+                    for (let i = 0; i < withFiles.length; i++) {
+                      await downloadFile(withFiles[i].file_url)
+                      if (i < withFiles.length - 1) await new Promise(r => setTimeout(r, 600))
+                    }
                   }} style={{ padding: '5px 12px', borderRadius: 999, border: '1.5px solid #E8EAF0', background: '#F8FAFC', color: '#64748B', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                     <svg viewBox="0 0 24 24" style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -439,14 +450,14 @@ export default function AdminDashboard() {
                       </svg>
                       View file
                     </a>
-                    <a href={r.file_url} download style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748B', fontWeight: 600, background: '#F8FAFC', padding: '10px 14px', borderRadius: 10, textDecoration: 'none', border: '1px solid #E8EAF0' }}>
+                    <button onClick={() => downloadFile(r.file_url)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748B', fontWeight: 600, background: '#F8FAFC', padding: '10px 14px', borderRadius: 10, border: '1px solid #E8EAF0', cursor: 'pointer' }}>
                       <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="7 10 12 15 17 10"/>
                         <line x1="12" y1="15" x2="12" y2="3"/>
                       </svg>
                       Download
-                    </a>
+                    </button>
                   </div>
                 )}
 
