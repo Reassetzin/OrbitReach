@@ -74,24 +74,18 @@ export default function ProposalsPage() {
     if (!aiPrompt.trim()) return
     setGeneratingScope(true)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/generate-scope', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: `You are a web design agency. Generate a scope of work for this project: "${aiPrompt}"\n\nReturn ONLY a JSON array, no markdown, no explanation. Each item must have: title (string), description (string, 1-2 sentences), price (number in USD, realistic for a web agency).\n\nExample format: [{"title":"Website Design","description":"Custom design for up to 5 pages.","price":1500}]\n\nGenerate 3-5 deliverables appropriate for the project.`
-          }]
-        })
+        body: JSON.stringify({ prompt: aiPrompt })
       })
       const data = await res.json()
-      const text = data.content?.[0]?.text ?? ''
-      const cleaned = text.replace(/```json|```/g, '').trim()
-      const parsed: ScopeItem[] = JSON.parse(cleaned)
-      setScope(parsed)
-    } catch (e) {
+      if (data.scope) {
+        setScope(data.scope)
+      } else {
+        alert('Failed to generate scope. Try again or add items manually.')
+      }
+    } catch {
       alert('Failed to generate scope. Try again or add items manually.')
     }
     setGeneratingScope(false)
