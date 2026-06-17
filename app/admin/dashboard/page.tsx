@@ -20,7 +20,7 @@ export default function AdminDashboard() {
   const [reqFilter, setReqFilter] = useState<'pending'|'all'>('pending')
   const [resetting, setResetting] = useState(false)
   const [resetMsg, setResetMsg]   = useState('')
-  const [selectedReq, setSelectedReq] = useState<any>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   async function downloadFile(url: string, filename?: string) {
     try {
@@ -405,7 +405,7 @@ export default function AdminDashboard() {
       {/* ── REQUEST DETAIL MODAL ── */}
       {selectedReq && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(13,11,26,.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={e => e.target === e.currentTarget && setSelectedReq(null)}>
+          onClick={e => e.target === e.currentTarget && (setSelectedReq(null), setPreviewUrl(null))}>
           <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 520, boxShadow: '0 24px 64px rgba(0,0,0,.18)', border: '1px solid #E8EAF0', overflow: 'hidden' }}>
             {(() => {
               const r = selectedReq
@@ -424,7 +424,7 @@ export default function AdminDashboard() {
                       <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: st.bg, color: st.color }}>{st.label}</span>
                       <span style={{ fontSize: 12, color: '#94A3B8' }}>{r.clients?.name} · {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
-                    <button onClick={() => setSelectedReq(null)} style={{ width: 30, height: 30, borderRadius: '50%', background: '#F5F6FA', border: '1px solid #E8EAF0', color: '#94A3B8', fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                    <button onClick={() => { setSelectedReq(null); setPreviewUrl(null) }} style={{ width: 30, height: 30, borderRadius: '50%', background: '#F5F6FA', border: '1px solid #E8EAF0', color: '#94A3B8', fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                   </div>
                   <div style={{ padding: '22px 24px' }}>
                     <div style={{ fontSize: 18, fontWeight: 700, color: '#0D0D1A', marginBottom: 12, lineHeight: 1.4 }}>{cleanTitle}</div>
@@ -454,14 +454,14 @@ export default function AdminDashboard() {
                           const tc = typeColors[ext] ?? {bg:'#F1F5F9',color:'#64748B'}
                           return (
                             <div key={idx} style={{ border: '1px solid #E8EAF0', borderRadius: 12, overflow: 'hidden' }}>
-                              {/* Image preview */}
-                              {isImage && (
-                                <div style={{ background: '#F8FAFC', borderBottom: '1px solid #E8EAF0', maxHeight: 200, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <img src={url} alt={filename} style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', display: 'block' }} />
+                              {/* Click-to-reveal preview */}
+                              {previewUrl === url && isImage && (
+                                <div style={{ background: '#F8FAFC', borderBottom: '1px solid #E8EAF0', maxHeight: 220, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                  <img src={url} alt={filename} style={{ maxWidth: '100%', maxHeight: 220, objectFit: 'contain', display: 'block' }} />
+                                  <button onClick={() => setPreviewUrl(null)} style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,.4)', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer' }}>✕</button>
                                 </div>
                               )}
-                              {/* PDF preview link */}
-                              {isPdf && (
+                              {previewUrl === url && isPdf && (
                                 <div style={{ background: '#FEF2F2', borderBottom: '1px solid #E8EAF0', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
                                   <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, flexShrink: 0 }} fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                   <a href={url} target="_blank" rel="noopener" style={{ fontSize: 13, color: '#EF4444', fontWeight: 600, textDecoration: 'none' }}>Open PDF in new tab ↗</a>
@@ -469,9 +469,16 @@ export default function AdminDashboard() {
                               )}
                               {/* File row */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
-                                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 7px', borderRadius: 6, background: tc.bg, color: tc.color, flexShrink: 0 }}>{ext || 'file'}</span>
+                                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as any, letterSpacing: '.05em', padding: '3px 7px', borderRadius: 6, background: tc.bg, color: tc.color, flexShrink: 0 }}>{ext || 'file'}</span>
                                 <span style={{ fontSize: 13, color: '#0D0D1A', fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filename}</span>
-                                <a href={url} target="_blank" rel="noopener" style={{ fontSize: 12, color: '#6C63FF', fontWeight: 600, textDecoration: 'none', flexShrink: 0 }}>View</a>
+                                {(isImage || isPdf) && (
+                                  <button onClick={() => setPreviewUrl(previewUrl === url ? null : url)} style={{ fontSize: 12, color: '#6C63FF', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, textDecoration: 'underline' }}>
+                                    {previewUrl === url ? 'Hide' : 'View'}
+                                  </button>
+                                )}
+                                {!isImage && !isPdf && (
+                                  <a href={url} target="_blank" rel="noopener" style={{ fontSize: 12, color: '#6C63FF', fontWeight: 600, textDecoration: 'none', flexShrink: 0 }}>View</a>
+                                )}
                                 <button onClick={() => downloadFile(url, filename)} style={{ fontSize: 12, color: '#64748B', fontWeight: 600, background: '#F8FAFC', border: '1px solid #E8EAF0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>
                                   ↓ Download
                                 </button>
