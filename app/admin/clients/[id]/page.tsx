@@ -4,9 +4,10 @@ import { createClient } from '@/supabase/client'
 import { useParams } from 'next/navigation'
 
 const STATUS_META: Record<string, { bg: string; color: string; label: string }> = {
-  active:  { bg: '#ECFDF5', color: '#10B981', label: 'Active'    },
-  review:  { bg: '#FFFBEB', color: '#F59E0B', label: 'In Review' },
-  pending: { bg: '#F5F6FA', color: '#64748B', label: 'Pending'   },
+  active:    { bg: '#ECFDF5', color: '#10B981', label: 'Active'    },
+  review:    { bg: '#FFFBEB', color: '#F59E0B', label: 'In Review' },
+  pending:   { bg: '#F5F6FA', color: '#64748B', label: 'Pending'   },
+  cancelled: { bg: '#FEF2F2', color: '#EF4444', label: 'Cancelled' },
 }
 const STEPS       = ['Submitted', 'In Progress', 'In Review', 'Completed']
 const TASK_EMOJIS = ['📋','📎','📝','🔍','🖼️','✅','💬','🔗']
@@ -58,6 +59,12 @@ export default function ClientDetailPage() {
   async function updateStatus(s: string) {
     setEditStatus(s); await createClient().from('clients').update({ status: s }).eq('id', id as string)
     setClient((c: any) => ({ ...c, status: s }))
+  }
+
+  async function deleteClient() {
+    if (!confirm(`Permanently delete ${client.name}? This will remove all their tasks, requests, messages and invoices. This cannot be undone.`)) return
+    await createClient().from('clients').delete().eq('id', id as string)
+    window.location.href = '/admin/dashboard'
   }
   async function updateProgress(step: number) {
     setProgressStep(step); await createClient().from('clients').update({ progress_step: step }).eq('id', id as string)
@@ -197,9 +204,14 @@ export default function ClientDetailPage() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
             <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999, background: p.bg, color: p.color }}>{p.label}</span>
-            <button onClick={() => setShowHistory(true)} style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', background: pendingReqs.length > 0 ? '#FFFBEB' : '#F5F6FA', color: pendingReqs.length > 0 ? '#F59E0B' : '#64748B', border: `1px solid ${pendingReqs.length > 0 ? 'rgba(245,158,11,.2)' : '#E8EAF0'}`, borderRadius: 8, cursor: 'pointer' }}>
-              {pendingReqs.length > 0 ? `⚡ ${pendingReqs.length} pending` : `📋 Requests (${requests.length})`}
-            </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => setShowHistory(true)} style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', background: pendingReqs.length > 0 ? '#FFFBEB' : '#F5F6FA', color: pendingReqs.length > 0 ? '#F59E0B' : '#64748B', border: `1px solid ${pendingReqs.length > 0 ? 'rgba(245,158,11,.2)' : '#E8EAF0'}`, borderRadius: 8, cursor: 'pointer' }}>
+                {pendingReqs.length > 0 ? `⚡ ${pendingReqs.length} pending` : `📋 Requests (${requests.length})`}
+              </button>
+              <button onClick={deleteClient} style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', background: '#FEF2F2', color: '#EF4444', border: '1px solid rgba(239,68,68,.2)', borderRadius: 8, cursor: 'pointer' }}>
+                🗑 Delete client
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -226,10 +238,10 @@ export default function ClientDetailPage() {
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.08em', color: '#94A3B8', marginBottom: 8 }}>Client status</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {['active', 'review', 'pending'].map(s => (
+                {['active', 'review', 'pending', 'cancelled'].map(s => (
                   <button key={s} onClick={() => updateStatus(s)}
-                    style={{ flex: 1, padding: '10px 4px', borderRadius: 10, border: `1.5px solid ${editStatus === s ? '#6C63FF' : '#E8EAF0'}`, background: editStatus === s ? '#EEF0FF' : '#F8FAFC', color: editStatus === s ? '#6C63FF' : '#64748B', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                    {s === 'active' ? 'Active' : s === 'review' ? 'In Review' : 'Pending'}
+                    style={{ flex: 1, padding: '10px 4px', borderRadius: 10, border: `1.5px solid ${editStatus === s ? (s === 'cancelled' ? '#EF4444' : '#6C63FF') : '#E8EAF0'}`, background: editStatus === s ? (s === 'cancelled' ? '#FEF2F2' : '#EEF0FF') : '#F8FAFC', color: editStatus === s ? (s === 'cancelled' ? '#EF4444' : '#6C63FF') : '#64748B', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                    {s === 'active' ? 'Active' : s === 'review' ? 'In Review' : s === 'pending' ? 'Pending' : 'Cancelled'}
                   </button>
                 ))}
               </div>
