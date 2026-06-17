@@ -438,19 +438,47 @@ export default function AdminDashboard() {
                       </a>
                     )}
                     {(r.file_url || (r.file_urls && r.file_urls.length > 0)) && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-                        {(r.file_urls && r.file_urls.length > 0 ? r.file_urls : [r.file_url]).map((url: string, idx: number) => (
-                          <div key={idx} style={{ display: 'flex', gap: 8 }}>
-                            <a href={url} target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6C63FF', fontWeight: 600, background: '#EEF0FF', padding: '8px 12px', borderRadius: 10, textDecoration: 'none' }}>
-                              <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                              File {r.file_urls && r.file_urls.length > 1 ? idx + 1 : ''}
-                            </a>
-                            <button onClick={() => downloadFile(url)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748B', fontWeight: 600, background: '#F8FAFC', padding: '8px 12px', borderRadius: 10, border: '1px solid #E8EAF0', cursor: 'pointer' }}>
-                              <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                              Download
-                            </button>
-                          </div>
-                        ))}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                        {(r.file_urls && r.file_urls.length > 0 ? r.file_urls : [r.file_url]).map((url: string, idx: number) => {
+                          const filename = decodeURIComponent(url.split('/').pop()?.replace(/^\d+-/, '') ?? 'file')
+                          const ext = filename.split('.').pop()?.toLowerCase() ?? ''
+                          const isImage = ['jpg','jpeg','png','gif','webp','svg'].includes(ext)
+                          const isPdf = ext === 'pdf'
+                          const typeColors: Record<string,{bg:string;color:string}> = {
+                            pdf: {bg:'#FEF2F2',color:'#EF4444'}, png: {bg:'#EFF6FF',color:'#3B82F6'},
+                            jpg: {bg:'#EFF6FF',color:'#3B82F6'}, jpeg: {bg:'#EFF6FF',color:'#3B82F6'},
+                            svg: {bg:'#FDF4FF',color:'#A855F7'}, gif: {bg:'#EFF6FF',color:'#3B82F6'},
+                            zip: {bg:'#FFFBEB',color:'#F59E0B'}, docx: {bg:'#EEF0FF',color:'#6C63FF'},
+                            webp: {bg:'#EFF6FF',color:'#3B82F6'},
+                          }
+                          const tc = typeColors[ext] ?? {bg:'#F1F5F9',color:'#64748B'}
+                          return (
+                            <div key={idx} style={{ border: '1px solid #E8EAF0', borderRadius: 12, overflow: 'hidden' }}>
+                              {/* Image preview */}
+                              {isImage && (
+                                <div style={{ background: '#F8FAFC', borderBottom: '1px solid #E8EAF0', maxHeight: 200, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <img src={url} alt={filename} style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', display: 'block' }} />
+                                </div>
+                              )}
+                              {/* PDF preview link */}
+                              {isPdf && (
+                                <div style={{ background: '#FEF2F2', borderBottom: '1px solid #E8EAF0', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, flexShrink: 0 }} fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                  <a href={url} target="_blank" rel="noopener" style={{ fontSize: 13, color: '#EF4444', fontWeight: 600, textDecoration: 'none' }}>Open PDF in new tab ↗</a>
+                                </div>
+                              )}
+                              {/* File row */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 7px', borderRadius: 6, background: tc.bg, color: tc.color, flexShrink: 0 }}>{ext || 'file'}</span>
+                                <span style={{ fontSize: 13, color: '#0D0D1A', fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filename}</span>
+                                <a href={url} target="_blank" rel="noopener" style={{ fontSize: 12, color: '#6C63FF', fontWeight: 600, textDecoration: 'none', flexShrink: 0 }}>View</a>
+                                <button onClick={() => downloadFile(url, filename)} style={{ fontSize: 12, color: '#64748B', fontWeight: 600, background: '#F8FAFC', border: '1px solid #E8EAF0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>
+                                  ↓ Download
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                     {r.status === 'pending' ? (

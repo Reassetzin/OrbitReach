@@ -18,8 +18,8 @@ const REQ_STATUS: Record<string, { bg: string; color: string; label: string }> =
 
 async function uploadToStorage(file: File, folder: string): Promise<string | null> {
   const supabase = createClient()
-  const ext = file.name.split('.').pop()
-  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const path = `${folder}/${Date.now()}-${safeName}`
   const { error } = await supabase.storage.from('client-uploads').upload(path, file, { upsert: false })
   if (error) { console.error('Upload error:', error); return null }
   const { data } = supabase.storage.from('client-uploads').getPublicUrl(path)
