@@ -115,7 +115,8 @@ export default function PortalHomePage() {
       if (url) fileUrls.push(url)
     }
     const fileUrl = fileUrls[0] || null  // primary file for backward compat
-    const title = reqFiles.length > 0 ? `${reqTitle.trim()} [📎 ${reqFiles.length} file${reqFiles.length > 1 ? 's' : ''}]` : reqTitle.trim()
+    const fileLabel = reqFiles.length > 1 ? `${reqFiles.length} files` : '1 file'
+    const title = reqFiles.length > 0 ? `${reqTitle.trim()} [📎 ${fileLabel}]` : reqTitle.trim()
     const { data } = await supabase.from('requests').insert({
       client_id: client.id, title,
       description: reqDesc.trim() || null,
