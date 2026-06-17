@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [reqFilter, setReqFilter] = useState<'pending'|'all'>('pending')
   const [resetting, setResetting] = useState(false)
   const [resetMsg, setResetMsg]   = useState('')
+  const [selectedReq, setSelectedReq] = useState<any>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   async function downloadFile(url: string, filename?: string) {
