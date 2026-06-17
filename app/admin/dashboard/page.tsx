@@ -56,24 +56,6 @@ export default function AdminDashboard() {
     setResetting(false)
     setTimeout(() => setResetMsg(''), 4000)
   }
-    if (!confirm('Reset all client revision counts to 0? This cannot be undone.')) return
-    setResetting(true); setResetMsg('')
-    try {
-      const res = await fetch('/api/reset-revisions', {
-        method: 'POST',
-        headers: { 'x-cron-secret': process.env.NEXT_PUBLIC_CRON_SECRET ?? 'manual' }
-      })
-      const json = await res.json()
-      if (json.success) {
-        setResetMsg(`✓ Reset ${json.reset} client${json.reset !== 1 ? 's' : ''}`)
-        setClients(c => c.map(cl => ({ ...cl, revisions_used: 0 })))
-      } else {
-        setResetMsg('Error: ' + (json.error ?? 'unknown'))
-      }
-    } catch { setResetMsg('Network error') }
-    setResetting(false)
-    setTimeout(() => setResetMsg(''), 4000)
-  }
 
   useEffect(() => {
     const supabase = createClient()
