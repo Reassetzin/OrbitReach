@@ -72,6 +72,12 @@ export default function InvoicesPage() {
     setInvoices(inv => inv.map(i => i.id === id ? { ...i, status } : i))
   }
 
+  async function deleteInvoice(id: string, num: string) {
+    if (!confirm(`Delete invoice ${num}? This cannot be undone.`)) return
+    await createClient().from('invoices').delete().eq('id', id)
+    setInvoices(inv => inv.filter(i => i.id !== id))
+  }
+
   function printInvoice() {
     const content = printRef.current?.innerHTML
     if (!content) return
@@ -220,9 +226,14 @@ export default function InvoicesPage() {
                         </select>
                       </td>
                       <td style={{ padding: '14px 22px' }}>
-                        <button onClick={() => setPreview(inv)} style={{ fontSize: 12, fontWeight: 600, color: '#6C63FF', background: '#EEF0FF', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>
-                          View / Print
-                        </button>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => setPreview(inv)} style={{ fontSize: 12, fontWeight: 600, color: '#6C63FF', background: '#EEF0FF', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>
+                            View / Print
+                          </button>
+                          <button onClick={() => deleteInvoice(inv.id, inv.number)} style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', background: '#FEF2F2', border: 'none', borderRadius: 6, padding: '6px 10px', cursor: 'pointer' }}>
+                            ✕
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )

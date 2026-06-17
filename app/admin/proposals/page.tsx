@@ -18,6 +18,8 @@ export default function ProposalsPage() {
   const [creating,  setCreating]  = useState(false)
   const [saving,    setSaving]    = useState(false)
   const [preview,   setPreview]   = useState<Proposal | null>(null)
+  const [generatingScope, setGeneratingScope] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
   const printRef = useRef<HTMLDivElement>(null)
 
   /* form */
@@ -60,6 +62,39 @@ export default function ProposalsPage() {
   async function updateStatus(id: string, status: string) {
     await createClient().from('proposals').update({ status }).eq('id', id)
     setProposals(p => p.map(x => x.id === id ? { ...x, status } : x))
+  }
+
+  async function deleteProposal(id: string, name: string) {
+    if (!confirm(`Delete proposal for ${name}? This cannot be undone.`)) return
+    await createClient().from('proposals').delete().eq('id', id)
+    setProposals(p => p.filter(x => x.id !== id))
+  }
+
+  async function generateScope() {
+    if (!aiPrompt.trim()) return
+    setGeneratingScope(true)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: `You are a web design agency. Generate a scope of work for this project: "${aiPrompt}"\n\nReturn ONLY a JSON array, no markdown, no explanation. Each item must have: title (string), description (string, 1-2 sentences), price (number in USD, realistic for a web agency).\n\nExample format: [{"title":"Website Design","description":"Custom design for up to 5 pages.","price":1500}]\n\nGenerate 3-5 deliverables appropriate for the project.`
+          }]
+        })
+      })
+      const data = await res.json()
+      const text = data.content?.[0]?.text ?? ''
+      const cleaned = text.replace(/```json|```/g, '').trim()
+      const parsed: ScopeItem[] = JSON.parse(cleaned)
+      setScope(parsed)
+    } catch (e) {
+      alert('Failed to generate scope. Try again or add items manually.')
+    }
+    setGeneratingScope(false)
   }
 
   function printProposal() {
@@ -127,9 +162,26 @@ export default function ProposalsPage() {
                 </div>
               </div>
 
-              {/* Scope items */}
+              {/* AI scope generator */}
               <div>
                 <label style={S.label}>Scope of work</label>
+                <div style={{ background: 'linear-gradient(135deg,rgba(108,99,255,.06),rgba(168,85,247,.04))', border: '1.5px solid rgba(108,99,255,.15)', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#6C63FF', marginBottom: 8 }}>✨ Generate with AI</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      value={aiPrompt}
+                      onChange={e => setAiPrompt(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && generateScope()}
+                      placeholder="e.g. 5-page website for a pet dental clinic with booking and Stripe payments"
+                      style={{ ...S.input, flex: 1, fontSize: 13 }}
+                    />
+                    <button onClick={generateScope} disabled={generatingScope || !aiPrompt.trim()}
+                      style={{ padding: '10px 16px', background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: (generatingScope || !aiPrompt.trim()) ? 0.6 : 1 }}>
+                      {generatingScope ? '⏳ Generating…' : '✨ Generate'}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 6 }}>Describe the project and AI will suggest deliverables with pricing. You can edit after.</div>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {scope.map((item, idx) => (
                     <div key={idx} style={{ border: '1.5px solid #E8EAF0', borderRadius: 12, padding: 16, background: '#F8FAFC' }}>
@@ -217,9 +269,14 @@ export default function ProposalsPage() {
                         </select>
                       </td>
                       <td style={{ padding: '14px 22px' }}>
-                        <button onClick={() => setPreview(p)} style={{ fontSize: 12, fontWeight: 600, color: '#6C63FF', background: '#EEF0FF', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>
-                          View / Print
-                        </button>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => setPreview(p)} style={{ fontSize: 12, fontWeight: 600, color: '#6C63FF', background: '#EEF0FF', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>
+                            View / Print
+                          </button>
+                          <button onClick={() => deleteProposal(p.id, p.prospect_name)} style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', background: '#FEF2F2', border: 'none', borderRadius: 6, padding: '6px 10px', cursor: 'pointer' }}>
+                            ✕
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
