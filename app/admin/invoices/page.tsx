@@ -53,11 +53,14 @@ export default function InvoicesPage() {
     setSaving(true)
     const sb = createClient()
     const num = `INV-${Date.now().toString().slice(-6)}`
-    const { data } = await sb.from('invoices').insert({
+    const { data: inserted } = await sb.from('invoices').insert({
       client_id: clientId, number: num, status, due_date: dueDate,
       items, total, notes
-    }).select('*, clients(name, email)').single()
-    if (data) setInvoices(inv => [data, ...inv])
+    }).select('id').single()
+    if (inserted) {
+      const { data } = await sb.from('invoices').select('*, clients(name, email)').eq('id', inserted.id).single()
+      if (data) setInvoices(inv => [data, ...inv])
+    }
     setCreating(false)
     setItems([{ description: '', qty: 1, rate: 0 }])
     setClientId(''); setDueDate(''); setNotes('')
