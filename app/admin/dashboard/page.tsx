@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [reqFilter, setReqFilter] = useState<'pending'|'all'>('pending')
   const [resetting, setResetting] = useState(false)
   const [resetMsg, setResetMsg]   = useState('')
+  const [selectedReq, setSelectedReq] = useState<any>(null)
 
   async function resetRevisions() {
     if (!confirm('Reset all client revision counts to 0? This cannot be undone.')) return
@@ -310,23 +311,28 @@ export default function AdminDashboard() {
                   declined: {bg:'#FEF2F2',color:'#EF4444',label:'Declined'},
                 }
                 const s = S[r.status] ?? S.pending
+                /* strip [📎 filename] from display title */
+                const cleanTitle = r.title.replace(/\s*\[📎[^\]]*\]/g, '').trim()
+                const hasFile = r.file_url || r.title.includes('[📎')
                 return (
-                  <div key={r.id} style={{ padding: '14px 18px', borderBottom: '1px solid #F1F5F9' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: r.status === 'pending' ? 10 : 0 }}>
+                  <div key={r.id} onClick={() => setSelectedReq(r)}
+                    style={{ padding: '14px 18px', borderBottom: '1px solid #F1F5F9', cursor: 'pointer', transition: 'background .15s' }}
+                    onMouseEnter={e => (e.currentTarget.style.background='#F8FAFC')}
+                    onMouseLeave={e => (e.currentTarget.style.background='')}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0D0D1A', marginBottom: 3, lineHeight: 1.4 }}>{r.title}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#0D0D1A', lineHeight: 1.4 }}>{cleanTitle}</span>
+                          {hasFile && (
+                            <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, flexShrink: 0 }} fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                            </svg>
+                          )}
+                        </div>
                         <div style={{ fontSize: 12, color: '#94A3B8' }}>{r.clients?.name} · {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                        {r.description && <div style={{ fontSize: 12, color: '#64748B', marginTop: 4, lineHeight: 1.5 }}>{r.description}</div>}
                       </div>
                       <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: s.bg, color: s.color, flexShrink: 0 }}>{s.label}</span>
                     </div>
-                    {r.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: 7 }}>
-                        <button onClick={() => updateReq(r.id, 'accepted', r.client_id, r.title)} style={{ flex: 1, padding: '8px', background: '#ECFDF5', color: '#10B981', border: '1px solid rgba(16,185,129,.2)', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>✓ Accept</button>
-                        <button onClick={() => updateReq(r.id, 'backlog', r.client_id, r.title)} style={{ flex: 1, padding: '8px', background: '#EEF0FF', color: '#6C63FF', border: '1px solid rgba(108,99,255,.2)', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>📋 Backlog</button>
-                        <button onClick={() => updateReq(r.id, 'declined', r.client_id, r.title)} style={{ flex: 1, padding: '8px', background: '#FEF2F2', color: '#EF4444', border: '1px solid rgba(239,68,68,.2)', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>✕ Decline</button>
-                      </div>
-                    )}
                   </div>
                 )
               })}
@@ -364,6 +370,80 @@ export default function AdminDashboard() {
 
         </div>
       </div>
+
+      {/* ── REQUEST DETAIL MODAL ── */}
+      {selectedReq && (() => {
+        const r = selectedReq
+        const ST: Record<string,{bg:string;color:string;label:string}> = {
+          pending:  {bg:'#FFFBEB',color:'#F59E0B',label:'Pending'},
+          accepted: {bg:'#ECFDF5',color:'#10B981',label:'Accepted'},
+          backlog:  {bg:'#EEF0FF',color:'#6C63FF',label:'Backlog'},
+          declined: {bg:'#FEF2F2',color:'#EF4444',label:'Declined'},
+        }
+        const st = ST[r.status] ?? ST.pending
+        const cleanTitle = r.title.replace(/\s*\[📎[^\]]*\]/g, '').trim()
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(13,11,26,.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+            onClick={e => e.target === e.currentTarget && setSelectedReq(null)}>
+            <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 520, boxShadow: '0 24px 64px rgba(0,0,0,.18)', border: '1px solid #E8EAF0', overflow: 'hidden' }}>
+
+              {/* Modal header */}
+              <div style={{ padding: '18px 22px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: st.bg, color: st.color }}>{st.label}</span>
+                  <span style={{ fontSize: 12, color: '#94A3B8' }}>{r.clients?.name} · {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+                <button onClick={() => setSelectedReq(null)} style={{ width: 30, height: 30, borderRadius: '50%', background: '#F5F6FA', border: '1px solid #E8EAF0', color: '#94A3B8', fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              </div>
+
+              {/* Modal body */}
+              <div style={{ padding: '22px 24px' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#0D0D1A', marginBottom: 12, lineHeight: 1.4 }}>{cleanTitle}</div>
+
+                {r.description && (
+                  <div style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7, marginBottom: 16, background: '#F8FAFC', borderRadius: 10, padding: '12px 14px' }}>
+                    {r.description}
+                  </div>
+                )}
+
+                {r.link && (
+                  <a href={r.link} target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#6C63FF', fontWeight: 600, marginBottom: 14, textDecoration: 'none' }}>
+                    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    {r.link}
+                  </a>
+                )}
+
+                {r.file_url && (
+                  <a href={r.file_url} target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6C63FF', fontWeight: 600, marginBottom: 14, background: '#EEF0FF', padding: '10px 14px', borderRadius: 10, textDecoration: 'none' }}>
+                    <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                    </svg>
+                    View attached file
+                  </a>
+                )}
+
+                {/* Action buttons */}
+                {r.status === 'pending' ? (
+                  <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                    <button onClick={() => { updateReq(r.id, 'accepted', r.client_id, r.title); setSelectedReq({ ...r, status: 'accepted' }) }}
+                      style={{ flex: 1, padding: '12px', background: '#ECFDF5', color: '#10B981', border: '1.5px solid rgba(16,185,129,.2)', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>✓ Accept</button>
+                    <button onClick={() => { updateReq(r.id, 'backlog', r.client_id, r.title); setSelectedReq({ ...r, status: 'backlog' }) }}
+                      style={{ flex: 1, padding: '12px', background: '#EEF0FF', color: '#6C63FF', border: '1.5px solid rgba(108,99,255,.2)', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>📋 Backlog</button>
+                    <button onClick={() => { updateReq(r.id, 'declined', r.client_id, r.title); setSelectedReq({ ...r, status: 'declined' }) }}
+                      style={{ flex: 1, padding: '12px', background: '#FEF2F2', color: '#EF4444', border: '1.5px solid rgba(239,68,68,.2)', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>✕ Decline</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                    {r.status !== 'accepted' && <button onClick={() => { updateReq(r.id, 'accepted', r.client_id, r.title); setSelectedReq({ ...r, status: 'accepted' }) }} style={{ flex: 1, padding: '11px', background: '#ECFDF5', color: '#10B981', border: '1.5px solid rgba(16,185,129,.2)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>✓ Accept</button>}
+                    {r.status !== 'backlog'   && <button onClick={() => { updateReq(r.id, 'backlog',   r.client_id, r.title); setSelectedReq({ ...r, status: 'backlog'   }) }} style={{ flex: 1, padding: '11px', background: '#EEF0FF', color: '#6C63FF', border: '1.5px solid rgba(108,99,255,.2)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>📋 Backlog</button>}
+                    {r.status !== 'declined'  && <button onClick={() => { updateReq(r.id, 'declined',  r.client_id, r.title); setSelectedReq({ ...r, status: 'declined'  }) }} style={{ flex: 1, padding: '11px', background: '#FEF2F2', color: '#EF4444', border: '1.5px solid rgba(239,68,68,.2)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>✕ Decline</button>}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
