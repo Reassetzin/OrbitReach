@@ -489,7 +489,7 @@ export default function AdminDashboard() {
                         })}
                       </div>
                     )}
-                    {r.status === 'pending' ? (
+                    {selectedReq.status === 'pending' ? (
                       <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
                         <button onClick={() => { updateReq(r.id,'accepted',r.client_id,r.title); setSelectedReq({...r,status:'accepted'}) }} style={{ flex:1, padding:'12px', background:'#ECFDF5', color:'#10B981', border:'1.5px solid rgba(16,185,129,.2)', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>✓ Accept</button>
                         <button onClick={() => { updateReq(r.id,'backlog',r.client_id,r.title); setSelectedReq({...r,status:'backlog'}) }} style={{ flex:1, padding:'12px', background:'#EEF0FF', color:'#6C63FF', border:'1.5px solid rgba(108,99,255,.2)', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>📋 Backlog</button>
@@ -497,9 +497,9 @@ export default function AdminDashboard() {
                       </div>
                     ) : (
                       <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                        {r.status !== 'accepted' && <button onClick={() => { updateReq(r.id,'accepted',r.client_id,r.title); setSelectedReq({...r,status:'accepted'}) }} style={{ flex:1, padding:'11px', background:'#ECFDF5', color:'#10B981', border:'1.5px solid rgba(16,185,129,.2)', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>✓ Accept</button>}
-                        {r.status !== 'backlog'   && <button onClick={() => { updateReq(r.id,'backlog',r.client_id,r.title); setSelectedReq({...r,status:'backlog'}) }} style={{ flex:1, padding:'11px', background:'#EEF0FF', color:'#6C63FF', border:'1.5px solid rgba(108,99,255,.2)', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>📋 Backlog</button>}
-                        {r.status !== 'declined'  && <button onClick={() => { updateReq(r.id,'declined',r.client_id,r.title); setSelectedReq({...r,status:'declined'}) }} style={{ flex:1, padding:'11px', background:'#FEF2F2', color:'#EF4444', border:'1.5px solid rgba(239,68,68,.2)', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>✕ Decline</button>}
+                        {selectedReq.status !== 'accepted' && <button onClick={() => { updateReq(r.id,'accepted',r.client_id,r.title); setSelectedReq({...r,status:'accepted'}) }} style={{ flex:1, padding:'11px', background:'#ECFDF5', color:'#10B981', border:'1.5px solid rgba(16,185,129,.2)', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>✓ Accept</button>}
+                        {selectedReq.status !== 'backlog'   && <button onClick={() => { updateReq(r.id,'backlog',r.client_id,r.title); setSelectedReq({...r,status:'backlog'}) }} style={{ flex:1, padding:'11px', background:'#EEF0FF', color:'#6C63FF', border:'1.5px solid rgba(108,99,255,.2)', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>📋 Backlog</button>}
+                        {selectedReq.status !== 'declined'  && <button onClick={() => { updateReq(r.id,'declined',r.client_id,r.title); setSelectedReq({...r,status:'declined'}) }} style={{ flex:1, padding:'11px', background:'#FEF2F2', color:'#EF4444', border:'1.5px solid rgba(239,68,68,.2)', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>✕ Decline</button>}
                       </div>
                     )}
                   </div>
