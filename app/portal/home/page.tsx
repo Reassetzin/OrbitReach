@@ -177,7 +177,15 @@ export default function PortalHomePage() {
   return (
     <div style={S.page}>
       <style>{`
-        .portal-content { max-width: 680px; margin: 0 auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+        .portal-wrap { max-width: 1200px; margin: 0 auto; padding: 24px 24px 60px; }
+        .portal-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+        .portal-main { display: flex; flex-direction: column; gap: 16px; }
+        .portal-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 80px; }
+        @media(max-width: 900px) {
+          .portal-grid { grid-template-columns: 1fr; }
+          .portal-side { position: static; }
+          .portal-wrap { padding: 16px 14px 60px; }
+        }
         .step-line { position: absolute; top: 18px; left: 50%; right: -50%; height: 2px; z-index: 0; }
         .msg-bubble-in  { background: #F1F5F9; border-radius: 4px 16px 16px 16px; padding: 10px 14px; max-width: 78%; }
         .msg-bubble-out { background: linear-gradient(135deg,#6C63FF,#A855F7); border-radius: 16px 4px 16px 16px; padding: 10px 14px; max-width: 78%; }
@@ -278,7 +286,219 @@ export default function PortalHomePage() {
         </div>
       )}
 
-      <div className="portal-content">
+      <div className="portal-wrap">
+        <div className="portal-grid">
+
+          {/* ── LEFT: main content ── */}
+          <div className="portal-main">
+
+            {/* WELCOME HERO */}
+            <div style={{ background: 'linear-gradient(135deg,#6C63FF 0%,#A855F7 100%)', borderRadius: 20, padding: '24px 22px', color: '#fff', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(108,99,255,.3)' }}>
+              <div style={{ position: 'absolute', top: -30, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,.08)' }}/>
+              <div style={{ position: 'absolute', bottom: -20, left: 60, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }}/>
+              <div style={{ position: 'relative' }}>
+                <div style={{ fontSize: 13, opacity: .75, marginBottom: 4 }}>
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </div>
+                <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 2 }}>
+                  Welcome back, {firstName} 👋
+                </div>
+                <div style={{ fontSize: 14, opacity: .75, marginBottom: 20 }}>
+                  {client.type} · ${client.monthly_retainer}/month
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                  {[
+                    { val: `${tasksDone}/${clientTasks.length}`, lbl: 'Tasks done' },
+                    { val: `${left} left`,                       lbl: 'Revisions' },
+                    { val: client.next_payment ?? 'TBD',         lbl: 'Next payment' },
+                  ].map(s => (
+                    <div key={s.lbl} style={{ background: 'rgba(255,255,255,.18)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>{s.val}</div>
+                      <div style={{ fontSize: 11, opacity: .75, marginTop: 4, lineHeight: 1.3 }}>{s.lbl}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* PROGRESS */}
+            <div style={S.section}>
+              <div style={S.sHead}><div style={S.sTitle}>Website progress</div></div>
+              <div style={{ padding: '20px 16px 24px', display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
+                {STEPS.map((s, i) => {
+                  const isDone = i < step; const isActive = i === step
+                  return (
+                    <div key={s.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                      {i < STEPS.length - 1 && <div className="step-line" style={{ background: isDone ? '#10B981' : '#E8EAF0' }}/>}
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', border: `2.5px solid ${isDone ? '#10B981' : isActive ? '#6C63FF' : '#E8EAF0'}`, background: isDone ? '#10B981' : isActive ? '#6C63FF' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, position: 'relative', zIndex: 1, marginBottom: 10, boxShadow: isActive ? '0 0 0 5px rgba(108,99,255,.15)' : 'none', transition: 'all .3s' }}>
+                        {isDone ? <svg viewBox="0 0 24 24" style={{ width: 16, height: 16 }} fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ color: isActive ? '#fff' : '#CBD5E1', fontSize: 16 }}>{s.icon}</span>}
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center', color: isDone ? '#10B981' : isActive ? '#6C63FF' : '#94A3B8', lineHeight: 1.3, padding: '0 4px' }}>{s.label}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ACTION ITEMS */}
+            <div style={S.section}>
+              <div style={S.sHead}>
+                <div>
+                  <div style={S.sTitle}>Action items</div>
+                  <div style={S.sSub}>Tap a task to respond or upload a file</div>
+                </div>
+                {pending.length > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999, background: '#EEF0FF', color: '#6C63FF' }}>{pending.length} pending</span>}
+              </div>
+              <div style={S.pad}>
+                {pending.length === 0 && done.length === 0 && <div style={{ textAlign: 'center', padding: '24px 0', color: '#94A3B8', fontSize: 14 }}>No action items yet 🎉</div>}
+                {pending.map(t => (
+                  <div key={t.id} onClick={() => { setModal(t); setTaskResp(''); setTaskFile(null); setTaskFileName('') }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: '#EEF0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{t.emoji}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: '#0D0D1A', marginBottom: 3 }}>{t.title}</div>
+                      <div style={{ fontSize: 12, color: '#94A3B8' }}>{t.type === 'file' ? '📎 Upload a file' : t.type === 'review' ? '🔍 Review & approve' : '📝 Text response'}</div>
+                    </div>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: '#F5F6FA', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg style={{ width: 16, height: 16 }} viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
+                  </div>
+                ))}
+                {done.length > 0 && (
+                  <div style={{ marginTop: pending.length > 0 ? 16 : 0, paddingTop: pending.length > 0 ? 16 : 0, borderTop: pending.length > 0 ? '1px solid #F1F5F9' : 'none' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#94A3B8', marginBottom: 12 }}>Completed</div>
+                    {done.map(t => (
+                      <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #F1F5F9', opacity: .6 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{t.emoji}</div>
+                        <div style={{ flex: 1, fontSize: 14, color: '#94A3B8', textDecoration: 'line-through' }}>{t.title}</div>
+                        <div style={{ width: 24, height: 24, borderRadius: 6, background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }} fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* SUBMIT REQUEST */}
+            <div style={S.section}>
+              <div style={S.sHead}>
+                <div>
+                  <div style={S.sTitle}>Submit a request</div>
+                  <div style={S.sSub}>Describe what you need changed or added</div>
+                </div>
+                {requests.length > 0 && (
+                  <button onClick={() => setShowReqHistory(true)}
+                    style={{ fontSize: 13, fontWeight: 600, color: '#6C63FF', background: '#EEF0FF', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    History ({requests.length})
+                  </button>
+                )}
+              </div>
+              <div style={{ ...S.pad, paddingTop: 16 }}>
+                <div style={{ background: '#F8FAFC', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#0D0D1A' }}>{left} of {client.monthly_revisions ?? 5} revisions left</span>
+                    <span style={{ fontSize: 12, color: '#94A3B8' }}>Resets 1st of month</span>
+                  </div>
+                  <div style={{ height: 8, background: '#E8EAF0', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: left === 0 ? '#EF4444' : left <= 1 ? '#F59E0B' : 'linear-gradient(90deg,#6C63FF,#A855F7)', borderRadius: 999, transition: 'width .4s' }}/>
+                  </div>
+                  {left === 0 && <div style={{ fontSize: 12, color: '#F59E0B', marginTop: 8, fontWeight: 500 }}>⚠ Limit reached — new requests will be queued for next month.</div>}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <input value={reqTitle} onChange={e => setReqTitle(e.target.value)} placeholder="What do you need changed? *"
+                    style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', boxSizing: 'border-box', width: '100%' }}/>
+                  <textarea value={reqDesc} onChange={e => setReqDesc(e.target.value)} placeholder="More details — which page, what text, any references…" rows={3}
+                    style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', resize: 'none', boxSizing: 'border-box', width: '100%' }}/>
+                  <input value={reqLink} onChange={e => setReqLink(e.target.value)} placeholder="Reference link (optional)"
+                    style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', boxSizing: 'border-box', width: '100%' }}/>
+                  <div className={`upload-zone${reqFileName ? ' has-file' : ''}`} onClick={() => reqFileRef.current?.click()}>
+                    {reqFileName ? (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }} fill="none" stroke="#6C63FF" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span style={{ fontSize: 14, color: '#6C63FF', fontWeight: 600 }}>{reqFileName}</span>
+                        <button onClick={e => { e.stopPropagation(); setReqFile(null); setReqFileName('') }} style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}>✕</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 20, marginBottom: 4 }}>📎</div>
+                        <div style={{ fontSize: 14, color: '#64748B', fontWeight: 500 }}>Attach a file (optional)</div>
+                        <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>PNG, PDF, SVG, ZIP, DOCX — up to 50MB</div>
+                      </>
+                    )}
+                  </div>
+                  <input ref={reqFileRef} type="file" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) { setReqFile(f); setReqFileName(f.name) }}}/>
+                  {reqError && <div style={{ fontSize: 13, color: '#EF4444', background: '#FEF2F2', padding: '10px 14px', borderRadius: 8 }}>{reqError}</div>}
+                  <button onClick={submitRequest} disabled={submitting}
+                    style={{ padding: '15px', background: reqSuccess ? 'linear-gradient(135deg,#10B981,#059669)' : 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: submitting ? 0.7 : 1 }}>
+                    {reqSuccess ? '✓ Request submitted!' : submitting ? 'Uploading & submitting…' : left <= 0 ? 'Add to next month →' : 'Submit request →'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>{/* end portal-main */}
+
+          {/* ── RIGHT SIDEBAR ── */}
+          <div className="portal-side">
+
+            {/* MESSAGES */}
+            <div style={{ ...S.section, display: 'flex', flexDirection: 'column' }}>
+              <div style={S.sHead}><div style={S.sTitle}>Messages</div></div>
+              <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 200, maxHeight: 420, overflowY: 'auto' }}>
+                {messages.length === 0 && <div style={{ textAlign: 'center', padding: '32px 0', color: '#94A3B8', fontSize: 14 }}>No messages yet — say hello! 👋</div>}
+                {messages.map(m => (
+                  <div key={m.id} style={{ display: 'flex', justifyContent: m.from_admin ? 'flex-start' : 'flex-end' }}>
+                    <div className={m.from_admin ? 'msg-bubble-in' : 'msg-bubble-out'}>
+                      <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, color: m.from_admin ? '#6C63FF' : 'rgba(255,255,255,.8)' }}>{m.from_admin ? 'Studio' : 'You'}</div>
+                      <div style={{ fontSize: 14, color: m.from_admin ? '#0D0D1A' : '#fff', lineHeight: 1.5 }}>{m.text}</div>
+                      <div style={{ fontSize: 11, marginTop: 4, color: m.from_admin ? '#94A3B8' : 'rgba(255,255,255,.65)' }}>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={bottomRef}/>
+              </div>
+              <div style={{ padding: '12px 16px 16px', borderTop: '1px solid #E8EAF0', display: 'flex', gap: 10 }}>
+                <input value={msgText} onChange={e => setMsgText(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()} placeholder="Write a message…"
+                  style={{ flex: 1, fontSize: 14, padding: '11px 13px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none' }}/>
+                <button onClick={sendMessage} disabled={sending || !msgText.trim()}
+                  style={{ padding: '11px 18px', background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: (!msgText.trim() || sending) ? 0.5 : 1 }}>
+                  {sending ? '…' : 'Send'}
+                </button>
+              </div>
+            </div>
+
+            {/* BILLING */}
+            <div style={S.section}>
+              <div style={S.sHead}><div style={S.sTitle}>Billing</div></div>
+              <div style={S.pad}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  {[
+                    ['Plan', 'Monthly retainer'],
+                    ['Amount', `$${client.monthly_retainer}/month`],
+                    ['Next payment', client.next_payment ?? 'Contact studio'],
+                    ['Status', 'Paid up to date'],
+                  ].map(([l, v]) => (
+                    <div key={l} style={{ padding: '12px', background: '#F8FAFC', borderRadius: 12 }}>
+                      <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 3 }}>{l}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: l === 'Status' ? '#10B981' : '#0D0D1A' }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <button onClick={() => alert('Contact your studio to update payment info.')}
+                    style={{ padding: '11px', background: '#F8FAFC', color: '#64748B', border: '1.5px solid #E8EAF0', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Update card</button>
+                  <button onClick={() => alert('A cancellation request will be sent to your studio.')}
+                    style={{ padding: '11px', background: '#FEF2F2', color: '#EF4444', border: '1.5px solid rgba(239,68,68,.15)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel plan</button>
+                </div>
+              </div>
+            </div>
+
+          </div>{/* end portal-side */}
+
+        </div>
+      </div>
 
         {/* ── WELCOME HERO ── */}
         <div style={{ background: 'linear-gradient(135deg,#6C63FF 0%,#A855F7 100%)', borderRadius: 20, padding: '24px 22px', color: '#fff', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(108,99,255,.3)' }}>
@@ -309,184 +529,6 @@ export default function PortalHomePage() {
           </div>
         </div>
 
-        {/* ── PROGRESS ── */}
-        <div style={S.section}>
-          <div style={S.sHead}><div style={S.sTitle}>Website progress</div></div>
-          <div style={{ padding: '20px 16px 24px', display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
-            {STEPS.map((s, i) => {
-              const isDone = i < step; const isActive = i === step
-              return (
-                <div key={s.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                  {i < STEPS.length - 1 && <div className="step-line" style={{ background: isDone ? '#10B981' : '#E8EAF0' }}/>}
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', border: `2.5px solid ${isDone ? '#10B981' : isActive ? '#6C63FF' : '#E8EAF0'}`, background: isDone ? '#10B981' : isActive ? '#6C63FF' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, position: 'relative', zIndex: 1, marginBottom: 10, boxShadow: isActive ? '0 0 0 5px rgba(108,99,255,.15)' : 'none', transition: 'all .3s' }}>
-                    {isDone ? <svg viewBox="0 0 24 24" style={{ width: 16, height: 16 }} fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ color: isActive ? '#fff' : '#CBD5E1', fontSize: 16 }}>{s.icon}</span>}
-                  </div>
-                  <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center', color: isDone ? '#10B981' : isActive ? '#6C63FF' : '#94A3B8', lineHeight: 1.3, padding: '0 4px' }}>{s.label}</div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* ── ACTION ITEMS ── */}
-        <div style={S.section}>
-          <div style={S.sHead}>
-            <div>
-              <div style={S.sTitle}>Action items</div>
-              <div style={S.sSub}>Tap a task to respond or upload a file</div>
-            </div>
-            {pending.length > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999, background: '#EEF0FF', color: '#6C63FF' }}>{pending.length} pending</span>}
-          </div>
-          <div style={S.pad}>
-            {pending.length === 0 && done.length === 0 && <div style={{ textAlign: 'center', padding: '24px 0', color: '#94A3B8', fontSize: 14 }}>No action items yet 🎉</div>}
-            {pending.map(t => (
-              <div key={t.id} onClick={() => { setModal(t); setTaskResp(''); setTaskFile(null); setTaskFileName('') }}
-                style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#EEF0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{t.emoji}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#0D0D1A', marginBottom: 3 }}>{t.title}</div>
-                  <div style={{ fontSize: 12, color: '#94A3B8' }}>{t.type === 'file' ? '📎 Upload a file' : t.type === 'review' ? '🔍 Review & approve' : '📝 Text response'}</div>
-                </div>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: '#F5F6FA', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg style={{ width: 16, height: 16 }} viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
-              </div>
-            ))}
-            {done.length > 0 && (
-              <div style={{ marginTop: pending.length > 0 ? 16 : 0, paddingTop: pending.length > 0 ? 16 : 0, borderTop: pending.length > 0 ? '1px solid #F1F5F9' : 'none' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#94A3B8', marginBottom: 12 }}>Completed</div>
-                {done.map(t => (
-                  <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #F1F5F9', opacity: .6 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{t.emoji}</div>
-                    <div style={{ flex: 1, fontSize: 14, color: '#94A3B8', textDecoration: 'line-through' }}>{t.title}</div>
-                    <div style={{ width: 24, height: 24, borderRadius: 6, background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }} fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── SUBMIT REQUEST ── */}
-        <div style={S.section}>
-          <div style={S.sHead}>
-            <div>
-              <div style={S.sTitle}>Submit a request</div>
-              <div style={S.sSub}>Describe what you need changed or added</div>
-            </div>
-            {requests.length > 0 && (
-              <button onClick={() => setShowReqHistory(true)}
-                style={{ fontSize: 13, fontWeight: 600, color: '#6C63FF', background: '#EEF0FF', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                History ({requests.length})
-              </button>
-            )}
-          </div>
-          <div style={{ ...S.pad, paddingTop: 16 }}>
-            <div style={{ background: '#F8FAFC', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#0D0D1A' }}>{left} of {client.monthly_revisions ?? 5} revisions left</span>
-                <span style={{ fontSize: 12, color: '#94A3B8' }}>Resets 1st of month</span>
-              </div>
-              <div style={{ height: 8, background: '#E8EAF0', borderRadius: 999, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: left === 0 ? '#EF4444' : left <= 1 ? '#F59E0B' : 'linear-gradient(90deg,#6C63FF,#A855F7)', borderRadius: 999, transition: 'width .4s' }}/>
-              </div>
-              {left === 0 && <div style={{ fontSize: 12, color: '#F59E0B', marginTop: 8, fontWeight: 500 }}>⚠ Limit reached — new requests will be queued for next month.</div>}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <input value={reqTitle} onChange={e => setReqTitle(e.target.value)} placeholder="What do you need changed? *"
-                style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', boxSizing: 'border-box', width: '100%' }}/>
-              <textarea value={reqDesc} onChange={e => setReqDesc(e.target.value)} placeholder="More details — which page, what text, any references…" rows={3}
-                style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', resize: 'none', boxSizing: 'border-box', width: '100%' }}/>
-              <input value={reqLink} onChange={e => setReqLink(e.target.value)} placeholder="Reference link (optional)"
-                style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', boxSizing: 'border-box', width: '100%' }}/>
-
-              {/* File upload zone */}
-              <div
-                className={`upload-zone${reqFileName ? ' has-file' : ''}`}
-                onClick={() => reqFileRef.current?.click()}
-              >
-                {reqFileName ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                    <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }} fill="none" stroke="#6C63FF" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    <span style={{ fontSize: 14, color: '#6C63FF', fontWeight: 600 }}>{reqFileName}</span>
-                    <button onClick={e => { e.stopPropagation(); setReqFile(null); setReqFileName('') }}
-                      style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}>✕</button>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ fontSize: 20, marginBottom: 4 }}>📎</div>
-                    <div style={{ fontSize: 14, color: '#64748B', fontWeight: 500 }}>Attach a file (optional)</div>
-                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>PNG, PDF, SVG, ZIP, DOCX — up to 50MB</div>
-                  </>
-                )}
-              </div>
-              <input ref={reqFileRef} type="file" style={{ display: 'none' }}
-                onChange={e => { const f = e.target.files?.[0]; if (f) { setReqFile(f); setReqFileName(f.name) }}}/>
-
-              {reqError && <div style={{ fontSize: 13, color: '#EF4444', background: '#FEF2F2', padding: '10px 14px', borderRadius: 8 }}>{reqError}</div>}
-              <button onClick={submitRequest} disabled={submitting}
-                style={{ padding: '15px', background: reqSuccess ? 'linear-gradient(135deg,#10B981,#059669)' : 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: submitting ? 0.7 : 1 }}>
-                {reqSuccess ? '✓ Request submitted!' : submitting ? 'Uploading & submitting…' : left <= 0 ? 'Add to next month →' : 'Submit request →'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ── MESSAGES ── */}
-        <div style={{ ...S.section, display: 'flex', flexDirection: 'column' }}>
-          <div style={S.sHead}><div style={S.sTitle}>Messages</div></div>
-          <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 200, maxHeight: 400, overflowY: 'auto' }}>
-            {messages.length === 0 && <div style={{ textAlign: 'center', padding: '32px 0', color: '#94A3B8', fontSize: 14 }}>No messages yet — say hello! 👋</div>}
-            {messages.map(m => (
-              <div key={m.id} style={{ display: 'flex', justifyContent: m.from_admin ? 'flex-start' : 'flex-end' }}>
-                <div className={m.from_admin ? 'msg-bubble-in' : 'msg-bubble-out'}>
-                  <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, color: m.from_admin ? '#6C63FF' : 'rgba(255,255,255,.8)' }}>{m.from_admin ? 'Studio' : 'You'}</div>
-                  <div style={{ fontSize: 14, color: m.from_admin ? '#0D0D1A' : '#fff', lineHeight: 1.5 }}>{m.text}</div>
-                  <div style={{ fontSize: 11, marginTop: 4, color: m.from_admin ? '#94A3B8' : 'rgba(255,255,255,.65)' }}>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                </div>
-              </div>
-            ))}
-            <div ref={bottomRef}/>
-          </div>
-          <div style={{ padding: '12px 16px 16px', borderTop: '1px solid #E8EAF0', display: 'flex', gap: 10 }}>
-            <input value={msgText} onChange={e => setMsgText(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()} placeholder="Write a message…"
-              style={{ flex: 1, fontSize: 15, padding: '12px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none' }}/>
-            <button onClick={sendMessage} disabled={sending || !msgText.trim()}
-              style={{ padding: '12px 20px', background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: (!msgText.trim() || sending) ? 0.5 : 1 }}>
-              {sending ? '…' : 'Send'}
-            </button>
-          </div>
-        </div>
-
-        {/* ── BILLING ── */}
-        <div style={S.section}>
-          <div style={S.sHead}><div style={S.sTitle}>Billing</div></div>
-          <div style={S.pad}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              {[
-                ['Plan', 'Monthly retainer'],
-                ['Amount', `$${client.monthly_retainer}/month`],
-                ['Next payment', client.next_payment ?? 'Contact studio'],
-                ['Status', 'Paid up to date'],
-              ].map(([l, v]) => (
-                <div key={l} style={{ padding: '14px', background: '#F8FAFC', borderRadius: 12 }}>
-                  <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 4 }}>{l}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: l === 'Status' ? '#10B981' : '#0D0D1A' }}>{v}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
-              <button onClick={() => alert('Contact your studio to update payment info.')}
-                style={{ padding: '13px', background: '#F8FAFC', color: '#64748B', border: '1.5px solid #E8EAF0', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Update card</button>
-              <button onClick={() => alert('A cancellation request will be sent to your studio.')}
-                style={{ padding: '13px', background: '#FEF2F2', color: '#EF4444', border: '1.5px solid rgba(239,68,68,.15)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel plan</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
     </div>
   )
 }
