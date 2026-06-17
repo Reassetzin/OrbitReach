@@ -132,6 +132,8 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <a href="/admin/invoices" style={{ padding: '8px 14px', background: 'rgba(255,255,255,.08)', color: '#6B6B8A', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>🧾 Invoices</a>
+          <a href="/admin/proposals" style={{ padding: '8px 14px', background: 'rgba(255,255,255,.08)', color: '#6B6B8A', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>📋 Proposals</a>
           <a href="/admin/clients/new" style={{ padding: '8px 14px', background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 12px rgba(108,99,255,.3)' }}>+ Add client</a>
           <button onClick={resetRevisions} disabled={resetting} style={{ padding: '8px 14px', background: resetting ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.08)', color: resetMsg.startsWith('✓') ? '#10B981' : resetMsg.startsWith('Error') ? '#EF4444' : '#6B6B8A', borderRadius: 8, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
             {resetting ? 'Resetting…' : resetMsg || '↺ Reset revisions'}

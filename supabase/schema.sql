@@ -141,3 +141,39 @@ create policy "Admin full storage access" on storage.objects for all using (
 -- ── SET ADMIN EMAIL ──────────────────────────────────────────
 -- Replace with your actual admin email
 alter database postgres set "app.admin_email" to 'your@email.com';
+
+-- ── INVOICES ─────────────────────────────────────────────────
+create table invoices (
+  id          uuid primary key default gen_random_uuid(),
+  client_id   uuid references clients(id) on delete cascade,
+  number      text not null,
+  status      text not null default 'draft' check (status in ('draft','sent','paid','overdue')),
+  due_date    text,
+  items       jsonb not null default '[]',
+  total       integer not null default 0,
+  notes       text,
+  created_at  timestamptz default now()
+);
+
+alter table invoices enable row level security;
+create policy "Admin full access" on invoices for all using (auth.jwt() ->> 'email' = current_setting('app.admin_email', true));
+create policy "Client sees own" on invoices for select using (
+  client_id in (select id from clients where user_id = auth.uid())
+);
+
+-- ── PROPOSALS ────────────────────────────────────────────────
+create table proposals (
+  id            uuid primary key default gen_random_uuid(),
+  prospect_name text not null,
+  prospect_email text,
+  project_name  text not null,
+  scope         jsonb not null default '[]',
+  timeline      text,
+  total         integer not null default 0,
+  status        text not null default 'draft' check (status in ('draft','sent','accepted','declined')),
+  notes         text,
+  created_at    timestamptz default now()
+);
+
+alter table proposals enable row level security;
+create policy "Admin full access" on proposals for all using (auth.jwt() ->> 'email' = current_setting('app.admin_email', true));
