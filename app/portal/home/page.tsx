@@ -88,8 +88,9 @@ export default function PortalHomePage() {
       const url = await uploadToStorage(file, `tasks/${modal.client_id}`)
       if (url) fileUrls.push(url)
     }
+    const note = taskResp ? ' — ' + taskResp : ''
     const resp = fileUrls.length > 0
-      ? `Files: ${fileUrls.join(', ')}${taskResp ? ' — ' + taskResp : ''}`
+      ? 'Files: ' + fileUrls.join(', ') + note
       : taskResp || 'Submitted'
     await supabase.from('client_tasks').update({ done: true, response: resp }).eq('id', modal.id)
     setClientTasks(t => t.map(x => x.id === modal.id ? { ...x, done: true, response: resp } : x))
@@ -233,7 +234,7 @@ export default function PortalHomePage() {
       {/* Task modal */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'flex-end' }}
-          onClick={e => e.target === e.currentTarget && (setModal(null), setTaskResp(''), setTaskFiles([]))}
+          onClick={e => e.target === e.currentTarget && (setModal(null), setTaskResp(''), setTaskFiles([]))}>
           <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: 24, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ width: 36, height: 4, background: '#E8EAF0', borderRadius: 999, margin: '0 auto 20px' }}/>
             <div style={{ fontSize: 28, marginBottom: 8 }}>{modal.emoji}</div>
