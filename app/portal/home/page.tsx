@@ -34,16 +34,14 @@ export default function PortalHomePage() {
   const [loading, setLoading]           = useState(true)
   const [modal, setModal]               = useState<any>(null)
   const [taskResp, setTaskResp]         = useState('')
-  const [taskFile, setTaskFile]         = useState<File | null>(null)
-  const [taskFileName, setTaskFileName] = useState('')
+  const [taskFiles, setTaskFiles]       = useState<File[]>([])
   const [savingTask, setSavingTask]     = useState(false)
   const [msgText, setMsgText]           = useState('')
   const [sending, setSending]           = useState(false)
   const [reqTitle, setReqTitle]         = useState('')
   const [reqDesc, setReqDesc]           = useState('')
   const [reqLink, setReqLink]           = useState('')
-  const [reqFile, setReqFile]           = useState<File | null>(null)
-  const [reqFileName, setReqFileName]   = useState('')
+  const [reqFiles, setReqFiles]         = useState<File[]>([])
   const [submitting, setSubmitting]     = useState(false)
   const [reqSuccess, setReqSuccess]     = useState(false)
   const [reqError, setReqError]         = useState('')
@@ -85,17 +83,17 @@ export default function PortalHomePage() {
     if (!modal) return
     setSavingTask(true)
     const supabase = createClient()
-    let fileUrl = ''
-    if (taskFile) {
-      const url = await uploadToStorage(taskFile, `tasks/${modal.client_id}`)
-      fileUrl = url ? url : taskFileName
+    let fileUrls: string[] = []
+    for (const file of taskFiles) {
+      const url = await uploadToStorage(file, `tasks/${modal.client_id}`)
+      if (url) fileUrls.push(url)
     }
-    const resp = fileUrl
-      ? `File: ${fileUrl}${taskResp ? ' — ' + taskResp : ''}`
+    const resp = fileUrls.length > 0
+      ? `Files: ${fileUrls.join(', ')}${taskResp ? ' — ' + taskResp : ''}`
       : taskResp || 'Submitted'
     await supabase.from('client_tasks').update({ done: true, response: resp }).eq('id', modal.id)
     setClientTasks(t => t.map(x => x.id === modal.id ? { ...x, done: true, response: resp } : x))
-    setModal(null); setTaskResp(''); setTaskFile(null); setTaskFileName(''); setSavingTask(false)
+    setModal(null); setTaskResp(''); setTaskFiles([]); setSavingTask(false)
   }
 
   async function sendMessage() {
@@ -111,17 +109,19 @@ export default function PortalHomePage() {
     const left = Math.max(0, (client.monthly_revisions ?? 5) - (client.revisions_used ?? 0))
     setSubmitting(true); setReqError('')
     const supabase = createClient()
-    let fileUrl = ''
-    if (reqFile) {
-      const url = await uploadToStorage(reqFile, `requests/${client.id}`)
-      fileUrl = url ?? reqFileName
+    let fileUrls: string[] = []
+    for (const file of reqFiles) {
+      const url = await uploadToStorage(file, `requests/${client.id}`)
+      if (url) fileUrls.push(url)
     }
-    const title = fileUrl ? `${reqTitle.trim()} [📎 ${reqFileName}]` : reqTitle.trim()
+    const fileUrl = fileUrls[0] || null  // primary file for backward compat
+    const title = reqFiles.length > 0 ? `${reqTitle.trim()} [📎 ${reqFiles.length} file${reqFiles.length > 1 ? 's' : ''}]` : reqTitle.trim()
     const { data } = await supabase.from('requests').insert({
       client_id: client.id, title,
       description: reqDesc.trim() || null,
       link: reqLink.trim() || null,
-      file_url: fileUrl || null,
+      file_url: fileUrl,
+      file_urls: fileUrls.length > 0 ? fileUrls : null,
       status: left <= 0 ? 'backlog' : 'pending'
     }).select().single()
     if (data) {
@@ -131,7 +131,7 @@ export default function PortalHomePage() {
         setClient((c: any) => ({ ...c, revisions_used: (c.revisions_used ?? 0) + 1 }))
       }
     }
-    setReqTitle(''); setReqDesc(''); setReqLink(''); setReqFile(null); setReqFileName('')
+    setReqTitle(''); setReqDesc(''); setReqLink(''); setReqFiles([])
     setSubmitting(false); setReqSuccess(true)
     setTimeout(() => setReqSuccess(false), 3000)
   }
@@ -232,7 +232,7 @@ export default function PortalHomePage() {
       {/* Task modal */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'flex-end' }}
-          onClick={e => e.target === e.currentTarget && (setModal(null), setTaskResp(''), setTaskFile(null), setTaskFileName(''))}>
+          onClick={e => e.target === e.currentTarget && (setModal(null), setTaskResp(''), setTaskFiles([]))}
           <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: 24, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ width: 36, height: 4, background: '#E8EAF0', borderRadius: 999, margin: '0 auto 20px' }}/>
             <div style={{ fontSize: 28, marginBottom: 8 }}>{modal.emoji}</div>
@@ -241,33 +241,38 @@ export default function PortalHomePage() {
 
             {/* File upload zone */}
             <div
-              className={`upload-zone${taskFileName ? ' has-file' : ''}`}
+              className={`upload-zone${taskFiles.length > 0 ? ' has-file' : ''}`}
               onClick={() => taskFileRef.current?.click()}
               style={{ marginBottom: 14 }}
             >
-              {taskFileName ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }} fill="none" stroke="#6C63FF" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span style={{ fontSize: 14, color: '#6C63FF', fontWeight: 600 }}>{taskFileName}</span>
-                  <button onClick={e => { e.stopPropagation(); setTaskFile(null); setTaskFileName('') }}
-                    style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}>✕</button>
+              {taskFiles.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {taskFiles.map((f, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }} fill="none" stroke="#6C63FF" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <span style={{ fontSize: 13, color: '#6C63FF', fontWeight: 600, flex: 1 }}>{f.name}</span>
+                      <button onClick={e => { e.stopPropagation(); setTaskFiles(fs => fs.filter((_, j) => j !== i)) }}
+                        style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                    </div>
+                  ))}
+                  <div style={{ fontSize: 12, color: '#6C63FF', marginTop: 4 }}>+ Tap to add more files</div>
                 </div>
               ) : (
                 <>
                   <div style={{ fontSize: 24, marginBottom: 6 }}>📎</div>
-                  <div style={{ fontSize: 14, color: '#64748B', fontWeight: 500 }}>Tap to attach a file</div>
-                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>PNG, PDF, SVG, ZIP, DOCX — up to 50MB</div>
+                  <div style={{ fontSize: 14, color: '#64748B', fontWeight: 500 }}>Tap to attach files</div>
+                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>PNG, PDF, SVG, ZIP, DOCX — multiple allowed</div>
                 </>
               )}
             </div>
-            <input ref={taskFileRef} type="file" style={{ display: 'none' }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) { setTaskFile(f); setTaskFileName(f.name) }}}/>
+            <input ref={taskFileRef} type="file" multiple style={{ display: 'none' }}
+              onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) setTaskFiles(fs => [...fs, ...files]); e.target.value = '' }}/>
 
             <textarea value={taskResp} onChange={e => setTaskResp(e.target.value)} rows={4}
               placeholder={modal.type === 'file' ? 'Add a note (optional)…' : modal.type === 'review' ? 'Approved! / Please change…' : 'Your response…'}
               style={{ width: '100%', fontSize: 15, padding: '12px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', resize: 'none', boxSizing: 'border-box' }}/>
 
-            {savingTask && taskFile && (
+            {savingTask && taskFiles.length > 0 && (
               <div style={{ fontSize: 13, color: '#6C63FF', marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
                 Uploading file…
@@ -275,7 +280,7 @@ export default function PortalHomePage() {
             )}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <button onClick={() => { setModal(null); setTaskResp(''); setTaskFile(null); setTaskFileName('') }}
+              <button onClick={() => { setModal(null); setTaskResp(''); setTaskFiles([]) }}
                 style={{ flex: 1, padding: 14, background: '#F5F6FA', color: '#64748B', border: '1px solid #E8EAF0', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
               <button onClick={completeTask} disabled={savingTask}
                 style={{ flex: 2, padding: 14, background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: savingTask ? 0.7 : 1 }}>
@@ -351,7 +356,7 @@ export default function PortalHomePage() {
               <div style={S.pad}>
                 {pending.length === 0 && done.length === 0 && <div style={{ textAlign: 'center', padding: '24px 0', color: '#94A3B8', fontSize: 14 }}>No action items yet 🎉</div>}
                 {pending.map(t => (
-                  <div key={t.id} onClick={() => { setModal(t); setTaskResp(''); setTaskFile(null); setTaskFileName('') }}
+                  <div key={t.id} onClick={() => { setModal(t); setTaskResp(''); setTaskFiles([]) }}
                     style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
                     <div style={{ width: 44, height: 44, borderRadius: 12, background: '#EEF0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{t.emoji}</div>
                     <div style={{ flex: 1 }}>
@@ -412,22 +417,28 @@ export default function PortalHomePage() {
                     style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', resize: 'none', boxSizing: 'border-box', width: '100%' }}/>
                   <input value={reqLink} onChange={e => setReqLink(e.target.value)} placeholder="Reference link (optional)"
                     style={{ fontSize: 15, padding: '13px 14px', border: '1.5px solid #E8EAF0', borderRadius: 10, background: '#F8FAFC', outline: 'none', boxSizing: 'border-box', width: '100%' }}/>
-                  <div className={`upload-zone${reqFileName ? ' has-file' : ''}`} onClick={() => reqFileRef.current?.click()}>
-                    {reqFileName ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                        <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }} fill="none" stroke="#6C63FF" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        <span style={{ fontSize: 14, color: '#6C63FF', fontWeight: 600 }}>{reqFileName}</span>
-                        <button onClick={e => { e.stopPropagation(); setReqFile(null); setReqFileName('') }} style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}>✕</button>
+                  <div className={`upload-zone${reqFiles.length > 0 ? ' has-file' : ''}`} onClick={() => reqFileRef.current?.click()}>
+                    {reqFiles.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {reqFiles.map((f, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }} fill="none" stroke="#6C63FF" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span style={{ fontSize: 13, color: '#6C63FF', fontWeight: 600, flex: 1 }}>{f.name}</span>
+                            <button onClick={e => { e.stopPropagation(); setReqFiles(fs => fs.filter((_, j) => j !== i)) }}
+                              style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                          </div>
+                        ))}
+                        <div style={{ fontSize: 12, color: '#6C63FF', marginTop: 4 }}>+ Tap to add more files</div>
                       </div>
                     ) : (
                       <>
                         <div style={{ fontSize: 20, marginBottom: 4 }}>📎</div>
-                        <div style={{ fontSize: 14, color: '#64748B', fontWeight: 500 }}>Attach a file (optional)</div>
-                        <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>PNG, PDF, SVG, ZIP, DOCX — up to 50MB</div>
+                        <div style={{ fontSize: 14, color: '#64748B', fontWeight: 500 }}>Attach files (optional)</div>
+                        <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>PNG, PDF, SVG, ZIP, DOCX — multiple allowed</div>
                       </>
                     )}
                   </div>
-                  <input ref={reqFileRef} type="file" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) { setReqFile(f); setReqFileName(f.name) }}}/>
+                  <input ref={reqFileRef} type="file" multiple style={{ display: 'none' }} onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) setReqFiles(fs => [...fs, ...files]); e.target.value = '' }}/>
                   {reqError && <div style={{ fontSize: 13, color: '#EF4444', background: '#FEF2F2', padding: '10px 14px', borderRadius: 8 }}>{reqError}</div>}
                   <button onClick={submitRequest} disabled={submitting}
                     style={{ padding: '15px', background: reqSuccess ? 'linear-gradient(135deg,#10B981,#059669)' : 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: submitting ? 0.7 : 1 }}>

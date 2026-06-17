@@ -437,16 +437,20 @@ export default function AdminDashboard() {
                         {r.link}
                       </a>
                     )}
-                    {r.file_url && (
-                      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                        <a href={r.file_url} target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6C63FF', fontWeight: 600, background: '#EEF0FF', padding: '10px 14px', borderRadius: 10, textDecoration: 'none' }}>
-                          <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                          View file
-                        </a>
-                        <button onClick={() => downloadFile(r.file_url)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748B', fontWeight: 600, background: '#F8FAFC', padding: '10px 14px', borderRadius: 10, border: '1px solid #E8EAF0', cursor: 'pointer' }}>
-                          <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                          Download
-                        </button>
+                    {(r.file_url || (r.file_urls && r.file_urls.length > 0)) && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                        {(r.file_urls && r.file_urls.length > 0 ? r.file_urls : [r.file_url]).map((url: string, idx: number) => (
+                          <div key={idx} style={{ display: 'flex', gap: 8 }}>
+                            <a href={url} target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6C63FF', fontWeight: 600, background: '#EEF0FF', padding: '8px 12px', borderRadius: 10, textDecoration: 'none' }}>
+                              <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                              File {r.file_urls && r.file_urls.length > 1 ? idx + 1 : ''}
+                            </a>
+                            <button onClick={() => downloadFile(url)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748B', fontWeight: 600, background: '#F8FAFC', padding: '8px 12px', borderRadius: 10, border: '1px solid #E8EAF0', cursor: 'pointer' }}>
+                              <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                              Download
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
                     {r.status === 'pending' ? (
