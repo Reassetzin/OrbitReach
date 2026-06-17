@@ -97,7 +97,7 @@ export default function AdminDashboard() {
   return (
     <div style={{ fontFamily: 'Inter, sans-serif', background: '#F5F6FA', minHeight: '100dvh' }}>
       <style>{`
-        .dash { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; display: flex; flex-direction: column; gap: 24px; }
+        .dash { max-width: 1080px; margin: 0 auto; padding: 24px 20px 60px; display: flex; flex-direction: column; gap: 24px; }
         .metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
         @media(max-width:700px){ .metrics { grid-template-columns: 1fr 1fr; } }
         .dash-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
@@ -113,32 +113,45 @@ export default function AdminDashboard() {
         .client-row:hover { background: #F8FAFC; }
         .task-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #F1F5F9; }
         .task-row:last-child { border-bottom: none; }
-        .anchor-nav { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 14px 16px; background: #fff; border-bottom: 1px solid #E8EAF0; position: sticky; top: 0; z-index: 20; }
+        .anchor-nav { display: none; }
+        @media(max-width:700px){ .anchor-nav { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 12px 16px; background: #fff; border-bottom: 1px solid #E8EAF0; position: sticky; top: 0; z-index: 20; } }
         .anchor-nav::-webkit-scrollbar { display: none; }
-        .anav-btn { flex-shrink: 0; padding: 8px 16px; border-radius: 999px; border: 1.5px solid #E8EAF0; background: #F8FAFC; color: #64748B; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
+        .anav-btn { flex-shrink: 0; padding: 7px 14px; border-radius: 999px; border: 1.5px solid #E8EAF0; background: #F8FAFC; color: #64748B; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
         .anav-btn:hover { border-color: #6C63FF; color: #6C63FF; background: #EEF0FF; }
         .section-wrap { scroll-margin-top: 56px; }
       `}</style>
 
       {/* ── TOP HEADER ── */}
-      <div style={{ background: '#0F0F14', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg,#6C63FF,#A855F7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg viewBox="0 0 24 24" style={{ width: 16, height: 16 }} fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <div style={{ background: '#0F0F14', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 20px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg,#6C63FF,#A855F7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }} fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: '-.01em' }}>
+              Orbit<span style={{ color: '#A78BFA' }}>Reach</span>
+            </span>
           </div>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1 }}>Studio</div>
-            <div style={{ fontSize: 11, color: '#6B6B8A', marginTop: 2 }}>Admin dashboard</div>
+
+          {/* Nav links */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <a href="/admin/invoices" style={{ padding: '7px 14px', background: 'transparent', color: '#9CA3AF', borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none', transition: 'color .15s' }}
+              onMouseEnter={e => (e.currentTarget.style.color='#fff')} onMouseLeave={e => (e.currentTarget.style.color='#9CA3AF')}>
+              Invoices
+            </a>
+            <a href="/admin/proposals" style={{ padding: '7px 14px', background: 'transparent', color: '#9CA3AF', borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}
+              onMouseEnter={e => (e.currentTarget.style.color='#fff')} onMouseLeave={e => (e.currentTarget.style.color='#9CA3AF')}>
+              Proposals
+            </a>
+            <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,.1)', margin: '0 4px' }}/>
+            <a href="/admin/clients/new" style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', boxShadow: '0 2px 10px rgba(108,99,255,.35)' }}>
+              + Add client
+            </a>
+            <a href="/login" style={{ padding: '7px 14px', background: 'rgba(255,255,255,.06)', color: '#9CA3AF', borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none', border: '1px solid rgba(255,255,255,.08)' }}>
+              Sign out
+            </a>
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <a href="/admin/invoices" style={{ padding: '8px 14px', background: 'rgba(255,255,255,.08)', color: '#6B6B8A', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>🧾 Invoices</a>
-          <a href="/admin/proposals" style={{ padding: '8px 14px', background: 'rgba(255,255,255,.08)', color: '#6B6B8A', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>📋 Proposals</a>
-          <a href="/admin/clients/new" style={{ padding: '8px 14px', background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 12px rgba(108,99,255,.3)' }}>+ Add client</a>
-          <button onClick={resetRevisions} disabled={resetting} style={{ padding: '8px 14px', background: resetting ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.08)', color: resetMsg.startsWith('✓') ? '#10B981' : resetMsg.startsWith('Error') ? '#EF4444' : '#6B6B8A', borderRadius: 8, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            {resetting ? 'Resetting…' : resetMsg || '↺ Reset revisions'}
-          </button>
-          <a href="/login" style={{ padding: '8px 14px', background: 'rgba(255,255,255,.08)', color: '#6B6B8A', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Sign out</a>
         </div>
       </div>
 
