@@ -46,6 +46,7 @@ export default function PortalHomePage() {
   const [reqSuccess, setReqSuccess]     = useState(false)
   const [reqError, setReqError]         = useState('')
   const [showReqHistory, setShowReqHistory] = useState(false)
+  const [invoices, setInvoices] = useState<any[]>([])
   const bottomRef  = useRef<HTMLDivElement>(null)
   const taskFileRef = useRef<HTMLInputElement>(null)
   const reqFileRef  = useRef<HTMLInputElement>(null)
@@ -62,10 +63,12 @@ export default function PortalHomePage() {
           supabase.from('client_tasks').select('*').eq('client_id', c.id).order('created_at'),
           supabase.from('messages').select('*').eq('client_id', c.id).order('created_at'),
           supabase.from('requests').select('*').eq('client_id', c.id).order('created_at', { ascending: false }),
-        ]).then(([ct, m, r]) => {
+          supabase.from('invoices').select('*').eq('client_id', c.id).order('created_at', { ascending: false }),
+        ]).then(([ct, m, r, inv]) => {
           setClientTasks(ct.data ?? [])
           setMessages(m.data ?? [])
           setRequests(r.data ?? [])
+          setInvoices(inv.data ?? [])
           setLoading(false)
         })
         channel = supabase.channel('portal-msgs-' + c.id)
@@ -483,27 +486,103 @@ export default function PortalHomePage() {
 
             {/* BILLING */}
             <div style={S.section}>
-              <div style={S.sHead}><div style={S.sTitle}>Billing</div></div>
-              <div style={S.pad}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <div style={S.sHead}>
+                <div>
+                  <div style={S.sTitle}>Billing</div>
+                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>${client.monthly_retainer}/mo · next: {client.next_payment ?? 'TBD'}</div>
+                </div>
+              </div>
+              <div style={{ padding: '12px 16px 16px' }}>
+                {/* Summary cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
                   {[
-                    ['Plan', 'Monthly retainer'],
-                    ['Amount', `$${client.monthly_retainer}/month`],
-                    ['Next payment', client.next_payment ?? 'Contact studio'],
-                    ['Status', 'Paid up to date'],
-                  ].map(([l, v]) => (
-                    <div key={l} style={{ padding: '12px', background: '#F8FAFC', borderRadius: 12 }}>
-                      <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 3 }}>{l}</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: l === 'Status' ? '#10B981' : '#0D0D1A' }}>{v}</div>
+                    { l: 'Plan', v: client.type ?? 'Monthly retainer' },
+                    { l: 'Amount', v: `$${client.monthly_retainer}/mo` },
+                    { l: 'Next payment', v: client.next_payment ?? 'TBD' },
+                    { l: 'Invoices', v: `${invoices.length} total` },
+                  ].map(({ l, v }) => (
+                    <div key={l} style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10 }}>
+                      <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 2 }}>{l}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#0D0D1A' }}>{v}</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <button onClick={() => alert('Contact your studio to update payment info.')}
-                    style={{ padding: '11px', background: '#F8FAFC', color: '#64748B', border: '1.5px solid #E8EAF0', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Update card</button>
-                  <button onClick={() => alert('A cancellation request will be sent to your studio.')}
-                    style={{ padding: '11px', background: '#FEF2F2', color: '#EF4444', border: '1.5px solid rgba(239,68,68,.15)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel plan</button>
-                </div>
+
+                {/* Invoice list */}
+                {invoices.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: '#94A3B8', fontSize: 13 }}>No invoices yet.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {invoices.map(inv => {
+                      const ST: Record<string,{bg:string;color:string}> = {
+                        draft:   { bg:'#F1F5F9', color:'#64748B' },
+                        sent:    { bg:'#EEF0FF', color:'#6C63FF' },
+                        paid:    { bg:'#ECFDF5', color:'#10B981' },
+                        overdue: { bg:'#FEF2F2', color:'#EF4444' },
+                      }
+                      const st = ST[inv.status] ?? ST.sent
+                      return (
+                        <div key={inv.id} style={{ border: '1px solid #E8EAF0', borderRadius: 12, overflow: 'hidden' }}>
+                          <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: '#0D0D1A' }}>{inv.number}</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: st.bg, color: st.color }}>{inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}</span>
+                              </div>
+                              <div style={{ fontSize: 12, color: '#94A3B8' }}>
+                                {inv.due_date ? `Due ${inv.due_date}` : `Issued ${new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                              </div>
+                            </div>
+                            <div style={{ fontSize: 17, fontWeight: 800, color: '#6C63FF', flexShrink: 0 }}>${inv.total.toLocaleString()}</div>
+                          </div>
+                          {/* Line items preview */}
+                          {inv.items && inv.items.length > 0 && (
+                            <div style={{ borderTop: '1px solid #F1F5F9', padding: '8px 14px', background: '#F8FAFC' }}>
+                              {inv.items.map((item: any, i: number) => (
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748B', padding: '3px 0' }}>
+                                  <span>{item.description}{item.qty > 1 ? ` ×${item.qty}` : ''}</span>
+                                  <span style={{ fontWeight: 600 }}>${(item.qty * item.rate).toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {/* Print button */}
+                          <div style={{ borderTop: '1px solid #F1F5F9', padding: '8px 14px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button onClick={() => {
+                              const w = window.open('', '_blank')!
+                              w.document.write(`<!DOCTYPE html><html><head><title>${inv.number}</title>
+                                <style>body{font-family:Inter,sans-serif;padding:40px;color:#0D0D1A;max-width:700px;margin:0 auto}
+                                h1{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:0}
+                                table{width:100%;border-collapse:collapse;margin:20px 0}
+                                th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#94A3B8;padding:8px 0;border-bottom:1px solid #E8EAF0}
+                                td{padding:10px 0;border-bottom:1px solid #F1F5F9;font-size:14px}
+                                .total{background:linear-gradient(135deg,#6C63FF,#A855F7);border-radius:12px;padding:16px 20px;text-align:right;color:#fff;margin-top:16px}
+                                @media print{body{padding:20px}}</style></head><body>
+                                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px">
+                                  <div><h1>OrbitReach</h1><div style="font-size:13px;color:#94A3B8;margin-top:4px">Web Design Studio</div></div>
+                                  <div style="text-align:right"><div style="font-size:20px;font-weight:800;color:#6C63FF">${inv.number}</div>
+                                  ${inv.due_date ? `<div style="font-size:13px;color:#EF4444;font-weight:600;margin-top:4px">Due: ${inv.due_date}</div>` : ''}</div>
+                                </div>
+                                <div style="background:#F8FAFC;border-radius:10px;padding:14px 18px;margin-bottom:24px">
+                                  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94A3B8;margin-bottom:6px">Bill to</div>
+                                  <div style="font-size:16px;font-weight:700">${client.name}</div>
+                                  <div style="font-size:13px;color:#64748B">${client.email ?? ''}</div>
+                                </div>
+                                <table><thead><tr><th>Description</th><th style="text-align:right">Qty</th><th style="text-align:right">Rate</th><th style="text-align:right">Amount</th></tr></thead>
+                                <tbody>${(inv.items ?? []).map((item: any) => `<tr><td>${item.description}</td><td style="text-align:right">${item.qty}</td><td style="text-align:right">$${item.rate.toLocaleString()}</td><td style="text-align:right;font-weight:600">$${(item.qty*item.rate).toLocaleString()}</td></tr>`).join('')}</tbody></table>
+                                <div class="total"><div style="font-size:12px;opacity:.75;margin-bottom:4px">TOTAL DUE</div><div style="font-size:26px;font-weight:800">$${inv.total.toLocaleString()}</div></div>
+                                ${inv.notes ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid #E8EAF0"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94A3B8;margin-bottom:6px">Notes</div><div style="font-size:14px;color:#64748B">${inv.notes}</div></div>` : ''}
+                              </body></html>`)
+                              w.document.close(); w.print()
+                            }} style={{ fontSize: 12, fontWeight: 600, color: '#6C63FF', background: '#EEF0FF', border: 'none', borderRadius: 7, padding: '6px 12px', cursor: 'pointer' }}>
+                              🖨 Print / Save PDF
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
