@@ -289,6 +289,24 @@ export default function AdminDashboard() {
                 <div className="card-sub">{pendingReqs.length} pending · {requests.length} total</div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
+                {requests.some(r => r.file_url) && (
+                  <button onClick={() => {
+                    requests.filter(r => r.file_url).forEach((r, i) => {
+                      setTimeout(() => {
+                        const a = document.createElement('a')
+                        a.href = r.file_url; a.download = ''; a.target = '_blank'
+                        document.body.appendChild(a); a.click(); document.body.removeChild(a)
+                      }, i * 400)
+                    })
+                  }} style={{ padding: '5px 12px', borderRadius: 999, border: '1.5px solid #E8EAF0', background: '#F8FAFC', color: '#64748B', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <svg viewBox="0 0 24 24" style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    All files
+                  </button>
+                )}
                 {(['pending', 'all'] as const).map(f => (
                   <button key={f} onClick={() => setReqFilter(f)}
                     style={{ padding: '5px 12px', borderRadius: 999, border: `1.5px solid ${reqFilter === f ? '#6C63FF' : '#E8EAF0'}`, background: reqFilter === f ? '#EEF0FF' : '#F8FAFC', color: reqFilter === f ? '#6C63FF' : '#64748B', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
@@ -414,12 +432,22 @@ export default function AdminDashboard() {
                 )}
 
                 {r.file_url && (
-                  <a href={r.file_url} target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6C63FF', fontWeight: 600, marginBottom: 14, background: '#EEF0FF', padding: '10px 14px', borderRadius: 10, textDecoration: 'none' }}>
-                    <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                    </svg>
-                    View attached file
-                  </a>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                    <a href={r.file_url} target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6C63FF', fontWeight: 600, background: '#EEF0FF', padding: '10px 14px', borderRadius: 10, textDecoration: 'none' }}>
+                      <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                      View file
+                    </a>
+                    <a href={r.file_url} download style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748B', fontWeight: 600, background: '#F8FAFC', padding: '10px 14px', borderRadius: 10, textDecoration: 'none', border: '1px solid #E8EAF0' }}>
+                      <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      Download
+                    </a>
+                  </div>
                 )}
 
                 {/* Action buttons */}
