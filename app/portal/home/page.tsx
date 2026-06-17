@@ -293,28 +293,27 @@ export default function PortalHomePage() {
           <div className="portal-main">
 
             {/* WELCOME HERO */}
-            <div style={{ background: 'linear-gradient(135deg,#6C63FF 0%,#A855F7 100%)', borderRadius: 20, padding: '24px 22px', color: '#fff', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(108,99,255,.3)' }}>
-              <div style={{ position: 'absolute', top: -30, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,.08)' }}/>
-              <div style={{ position: 'absolute', bottom: -20, left: 60, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }}/>
+            <div style={{ background: 'linear-gradient(135deg,#6C63FF 0%,#A855F7 100%)', borderRadius: 20, padding: '28px 28px', color: '#fff', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(108,99,255,.3)' }}>
+              <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,.07)' }}/>
               <div style={{ position: 'relative' }}>
-                <div style={{ fontSize: 13, opacity: .75, marginBottom: 4 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, opacity: .7, marginBottom: 6, letterSpacing: '.01em' }}>
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </div>
-                <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 2 }}>
+                <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 4 }}>
                   Welcome back, {firstName} 👋
                 </div>
-                <div style={{ fontSize: 14, opacity: .75, marginBottom: 20 }}>
+                <div style={{ fontSize: 14, opacity: .7, marginBottom: 24 }}>
                   {client.type} · ${client.monthly_retainer}/month
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                   {[
                     { val: `${tasksDone}/${clientTasks.length}`, lbl: 'Tasks done' },
-                    { val: `${left} left`,                       lbl: 'Revisions' },
+                    { val: `${left} left`,                       lbl: 'Revisions left' },
                     { val: client.next_payment ?? 'TBD',         lbl: 'Next payment' },
                   ].map(s => (
-                    <div key={s.lbl} style={{ background: 'rgba(255,255,255,.18)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>{s.val}</div>
-                      <div style={{ fontSize: 11, opacity: .75, marginTop: 4, lineHeight: 1.3 }}>{s.lbl}</div>
+                    <div key={s.lbl} style={{ background: 'rgba(255,255,255,.15)', borderRadius: 14, padding: '14px 16px' }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1, marginBottom: 5 }}>{s.val}</div>
+                      <div style={{ fontSize: 12, opacity: .7, lineHeight: 1.3 }}>{s.lbl}</div>
                     </div>
                   ))}
                 </div>
