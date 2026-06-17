@@ -29,7 +29,7 @@ export default function PortalNav() {
 
   return (
     <header style={{ background: '#fff', borderBottom: '1px solid #E8EAF0', position: 'sticky', top: 0, zIndex: 50 }}>
-      <div style={{ maxWidth: 680, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px' }}>
         {/* Logo */}
         <div style={{ width: 30, height: 30, borderRadius: 9, background: 'linear-gradient(135deg,#6C63FF,#A855F7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }} fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
