@@ -18,8 +18,6 @@ export default function ProposalsPage() {
   const [creating,  setCreating]  = useState(false)
   const [saving,    setSaving]    = useState(false)
   const [preview,   setPreview]   = useState<Proposal | null>(null)
-  const [generatingScope, setGeneratingScope] = useState(false)
-  const [aiPrompt, setAiPrompt] = useState('')
   const printRef = useRef<HTMLDivElement>(null)
 
   /* form */
@@ -70,28 +68,7 @@ export default function ProposalsPage() {
     setProposals(p => p.filter(x => x.id !== id))
   }
 
-  async function generateScope() {
-    if (!aiPrompt.trim()) return
-    setGeneratingScope(true)
-    try {
-      const res = await fetch('/api/generate-scope', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: aiPrompt })
-      })
-      const data = await res.json()
-      if (data.scope) {
-        setScope(data.scope)
-      } else {
-        alert('Failed to generate scope. Try again or add items manually.')
-      }
-    } catch {
-      alert('Failed to generate scope. Try again or add items manually.')
-    }
-    setGeneratingScope(false)
-  }
-
-  function printProposal() {
+  async function printProposal() {
     const content = printRef.current?.innerHTML
     if (!content) return
     const w = window.open('', '_blank')!
@@ -156,26 +133,9 @@ export default function ProposalsPage() {
                 </div>
               </div>
 
-              {/* AI scope generator */}
+              {/* Scope of work */}
               <div>
                 <label style={S.label}>Scope of work</label>
-                <div style={{ background: 'linear-gradient(135deg,rgba(108,99,255,.06),rgba(168,85,247,.04))', border: '1.5px solid rgba(108,99,255,.15)', borderRadius: 12, padding: 16, marginBottom: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#6C63FF', marginBottom: 8 }}>✨ Generate with AI</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input
-                      value={aiPrompt}
-                      onChange={e => setAiPrompt(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && generateScope()}
-                      placeholder="e.g. 5-page website for a pet dental clinic with booking and Stripe payments"
-                      style={{ ...S.input, flex: 1, fontSize: 13 }}
-                    />
-                    <button onClick={generateScope} disabled={generatingScope || !aiPrompt.trim()}
-                      style={{ padding: '10px 16px', background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: (generatingScope || !aiPrompt.trim()) ? 0.6 : 1 }}>
-                      {generatingScope ? '⏳ Generating…' : '✨ Generate'}
-                    </button>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 6 }}>Describe the project and AI will suggest deliverables with pricing. You can edit after.</div>
-                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {scope.map((item, idx) => (
                     <div key={idx} style={{ border: '1.5px solid #E8EAF0', borderRadius: 12, padding: 16, background: '#F8FAFC' }}>
