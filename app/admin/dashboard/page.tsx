@@ -18,6 +18,28 @@ export default function AdminDashboard() {
   const [loading, setLoading]     = useState(true)
   const [newTaskMap, setNewTaskMap] = useState<Record<string,string>>({})
   const [reqFilter, setReqFilter] = useState<'pending'|'all'>('pending')
+  const [resetting, setResetting] = useState(false)
+  const [resetMsg, setResetMsg]   = useState('')
+
+  async function resetRevisions() {
+    if (!confirm('Reset all client revision counts to 0? This cannot be undone.')) return
+    setResetting(true); setResetMsg('')
+    try {
+      const res = await fetch('/api/reset-revisions', {
+        method: 'POST',
+        headers: { 'x-cron-secret': process.env.NEXT_PUBLIC_CRON_SECRET ?? 'manual' }
+      })
+      const json = await res.json()
+      if (json.success) {
+        setResetMsg(`✓ Reset ${json.reset} client${json.reset !== 1 ? 's' : ''}`)
+        setClients(c => c.map(cl => ({ ...cl, revisions_used: 0 })))
+      } else {
+        setResetMsg('Error: ' + (json.error ?? 'unknown'))
+      }
+    } catch { setResetMsg('Network error') }
+    setResetting(false)
+    setTimeout(() => setResetMsg(''), 4000)
+  }
 
   useEffect(() => {
     const supabase = createClient()
@@ -111,6 +133,9 @@ export default function AdminDashboard() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <a href="/admin/clients/new" style={{ padding: '8px 14px', background: 'linear-gradient(135deg,#6C63FF,#A855F7)', color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 12px rgba(108,99,255,.3)' }}>+ Add client</a>
+          <button onClick={resetRevisions} disabled={resetting} style={{ padding: '8px 14px', background: resetting ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.08)', color: resetMsg.startsWith('✓') ? '#10B981' : resetMsg.startsWith('Error') ? '#EF4444' : '#6B6B8A', borderRadius: 8, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            {resetting ? 'Resetting…' : resetMsg || '↺ Reset revisions'}
+          </button>
           <a href="/login" style={{ padding: '8px 14px', background: 'rgba(255,255,255,.08)', color: '#6B6B8A', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Sign out</a>
         </div>
       </div>
